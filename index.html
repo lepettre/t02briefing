@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#faf9f5">
+<title>Das Nötigste</title>
+<style>
+:root{--bg:#faf9f5;--fg:#1f1e1d;--mut:#6b6a66;--bd:#d3d0c5;--hl:#ebe8dd;--ok:#2f6b3a;--err:#a32d2d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1a18;--fg:#ece9df;--mut:#a29f95;--bd:#3b3935;--hl:#2e2c28;--ok:#7fc58b;--err:#f09595}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0 auto;padding:16px 16px 40px;max-width:760px;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1{font:500 22px/1.2 Georgia,"Times New Roman",serif;margin:0}
+h2{font-size:15px;font-weight:500;margin:0 0 8px}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 14px;flex-wrap:wrap}
+#status{font-size:13px;color:var(--mut)}
+#status.ok{color:var(--ok)}#status.err{color:var(--err)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+button{font:inherit;font-size:14px;color:var(--fg);background:transparent;border:1px solid var(--bd);border-radius:8px;padding:8px 14px;min-height:42px;cursor:pointer}
+button:hover{background:var(--hl)}
+button.primary{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:500;padding:8px 22px}
+button.primary:hover{opacity:.9;background:var(--fg)}
+button:disabled{opacity:.5;cursor:default}
+.paper{background:#fff;border:1px solid var(--bd);border-radius:6px;padding:0;margin:0 auto 16px;width:100%;max-width:420px}
+.paper canvas{display:block;width:100%;height:auto}
+details{border:1px solid var(--bd);border-radius:10px;padding:10px 14px;margin:0 0 10px}
+summary{cursor:pointer;font-weight:500}
+details[open] summary{margin-bottom:10px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+input[type=text],input[type=number],input[type=time],textarea,select{font:inherit;font-size:14px;width:100%;padding:7px 9px;border:1px solid var(--bd);border-radius:7px;background:transparent;color:var(--fg)}
+textarea{min-height:76px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg);margin:4px 0}
+.chk input{width:auto}
+.small{font-size:12.5px;color:var(--mut);margin:6px 0 0}
+#cals .chk{margin:2px 0}
+pre{margin:0;max-height:220px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;background:var(--hl);padding:8px 10px;border-radius:7px}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Das Nötigste</h1>
+  <span id="status">Drucker nicht verbunden</span>
+</div>
+
+<div class="row">
+  <button class="primary" id="bPrint">Briefing drucken</button>
+  <button id="bConn">Drucker verbinden</button>
+  <button id="bPrev">Vorschau neu laden</button>
+  <button id="bPng">Als Bild teilen</button>
+</div>
+
+<div class="paper"><canvas id="cv" width="384" height="400"></canvas></div>
+
+<details id="dSet">
+<summary>Einstellungen</summary>
+<div class="g2">
+  <div><label>Ort</label><input type="text" id="city"></div>
+  <div><label>&nbsp;</label><button id="bGeo" style="width:100%">Standort verwenden</button></div>
+  <div><label>Breite</label><input type="number" step="0.0001" id="lat"></div>
+  <div><label>Länge</label><input type="number" step="0.0001" id="lon"></div>
+</div>
+<label>Abschnitte</label>
+<div class="chk"><input type="checkbox" id="sWetter"><span>Wetter</span></div>
+<div class="chk"><input type="checkbox" id="sKal"><span>Kalender</span></div>
+<div class="chk"><input type="checkbox" id="sNews"><span>Nachrichten</span></div>
+<div class="chk"><input type="checkbox" id="sGest"><span>Die Gestirne</span></div>
+<div class="g2">
+  <div><label>Meldungen je Feed</label><input type="number" min="1" max="12" id="perFeed"></div>
+  <div><label>Demnächst (Termine)</label><input type="number" min="0" max="10" id="nextN"></div>
+  <div><label>Druckdichte (1 bis 8)</label><input type="number" min="1" max="8" id="density"></div>
+  <div><label>Vorschub am Ende (Punkte)</label><input type="number" min="0" max="250" id="feed"></div>
+</div>
+<label>Nachrichten-Feeds (eine Zeile je Feed: Name | Adresse)</label>
+<textarea id="feeds"></textarea>
+<label>Eigener Proxy für Feeds (Adresse mit {url}, leer = direkt, dann öffentliche Proxys)</label>
+<input type="text" id="proxy" placeholder="https://dein-worker.workers.dev/?url={url}">
+<label>Google-OAuth-Client-ID (für den Kalender)</label>
+<input type="text" id="clientId" placeholder="123456-abc.apps.googleusercontent.com">
+<div class="row" style="margin:10px 0 6px"><button id="bCals">Kalender laden</button></div>
+<div id="cals"></div>
+<p class="small">Einstellungen bleiben nur in diesem Browser gespeichert.</p>
+</details>
+
+<details>
+<summary>Dauerlauf-Test: Drucker wachhalten</summary>
+<p class="small" style="margin-top:0">Sendet in festem Abstand ein Lebenszeichen, damit sich der Drucker nicht abschaltet. Ob das wirkt, zeigt nur der Test: starten, Handy oder Laptop liegen lassen, später nachsehen.</p>
+<div class="g2">
+  <div><label>Abstand (Minuten)</label><input type="number" min="1" max="60" id="kaMin" value="5"></div>
+  <div><label>Bis (Uhrzeit, leer = bis Stopp)</label><input type="time" id="kaEnd"></div>
+</div>
+<label>Art des Lebenszeichens</label>
+<select id="kaMode">
+  <option value="init">Nur Initialisierung (kein Papier)</option>
+  <option value="feed">Vorschub um 1 Punkt (kaum Papier)</option>
+  <option value="blank">Leerzeile (8 Zeilen, etwas Papier)</option>
+</select>
+<div class="row" style="margin-top:12px"><button id="kaStart">Start</button><button id="kaStop" disabled>Stopp</button><button id="bTest">Testdruck</button></div>
+</details>
+
+<details>
+<summary>Ticker: neue Meldungen laufend drucken</summary>
+<p class="small" style="margin-top:0">Holt die Feeds regelmäßig und druckt nur Meldungen, die noch nicht gedruckt wurden. Das Fenster muss offen bleiben.</p>
+<div class="g2">
+  <div><label>Abstand (Minuten)</label><input type="number" min="1" max="120" id="tkMin" value="15"></div>
+  <div><label>Bis (Uhrzeit, leer = bis Stopp)</label><input type="time" id="tkEnd"></div>
+</div>
+<div class="chk"><input type="checkbox" id="tkFirst"><span>Beim Start auch die aktuellen Meldungen drucken</span></div>
+<div class="row" style="margin-top:10px"><button id="tkStart">Start</button><button id="tkStop" disabled>Stopp</button></div>
+</details>
+
+<details>
+<summary>Protokoll</summary>
+<pre id="log"></pre>
+</details>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const W=384,M=10,CW=W-2*M;
+const SERIF='Georgia, "Times New Roman", serif';
+
+const DEF={
+  city:'Hamburg',lat:53.5511,lon:9.9937,density:6,feed:48,perFeed:4,nextN:3,proxy:'',clientId:'',
+  feeds:[{n:'Tagesschau',u:'https://www.tagesschau.de/index~rss2.xml'},{n:'SPIEGEL',u:'https://www.spiegel.de/schlagzeilen/index.rss'}],
+  cals:[],calsDone:false,
+  sec:{wetter:1,kal:1,news:1,gest:1}
+};
+let cfg=load('noetigste.cfg',DEF);
+function load(k,d){try{const s=JSON.parse(localStorage.getItem(k)||'null');return s?Object.assign(JSON.parse(JSON.stringify(d)),s):JSON.parse(JSON.stringify(d));}catch(e){return JSON.parse(JSON.stringify(d));}}
+function save(){try{localStorage.setItem('noetigste.cfg',JSON.stringify(cfg));}catch(e){}}
+
+function log(m){const t=new Date().toLocaleTimeString('de-DE');const p=$('#log');p.textContent=t+'  '+m+'\n'+p.textContent.slice(0,6000);}
+function status(m,c){const s=$('#status');s.textContent=m;s.className=c||'';}
+
+const MM="Minima Moralia (1951), ",DA="Dialektik der Aufklärung (1944/47), ",ED="Der eindimensionale Mensch (1964), ",UG="Über den Begriff der Geschichte (1940), ";
+const NAMES={A:"Theodor W. Adorno",H:"Max Horkheimer",HA:"Horkheimer & Adorno",B:"Walter Benjamin",M:"Herbert Marcuse"};
+const Q=[
+["A","Es gibt kein richtiges Leben im falschen.",MM+"Aph. 18"],
+["A","Das Ganze ist das Unwahre.",MM+"Aph. 29"],
+["A","Nichts an der Psychoanalyse ist wahr als ihre Übertreibungen.",MM+"Aph. 29"],
+["A","Der Hang zum Okkultismus ist ein Symptom der Regression des Bewußtseins.",MM+"Aph. 151 (Thesen gegen den Okkultismus)"],
+["A","Der Okkultismus ist die Metaphysik der dummen Kerle.",MM+"Aph. 151 (Thesen gegen den Okkultismus)"],
+["A","Kunst ist Magie, befreit von der Lüge, wahr zu sein.",MM+"Aph. 143"],
+["A","Es gehört zur Moral, nicht bei sich selbst zu Hause zu sein.",MM+"Aph. 18"],
+["A","Denken heißt identifizieren.","Negative Dialektik (1966), Einleitung"],
+["HA","Die vollends aufgeklärte Erde strahlt im Zeichen triumphalen Unheils.",DA+"Begriff der Aufklärung"],
+["HA","Der Mythos ist schon Aufklärung, und Aufklärung schlägt in Mythologie zurück.",DA+"Einleitung"],
+["HA","Die Aufklärung ist totalitär wie nur irgendein System.",DA+"Begriff der Aufklärung"],
+["HA","Die Menschen bezahlen die Vermehrung ihrer Macht mit der Entfremdung von dem, worüber sie die Macht ausüben.",DA+"Begriff der Aufklärung"],
+["HA","Amusement ist die Verlängerung der Arbeit unterm Spätkapitalismus.",DA+"Kulturindustrie"],
+["HA","Vergnügtsein heißt Einverstandensein.",DA+"Kulturindustrie"],
+["HA","Kultur heute schlägt alles mit Ähnlichkeit.",DA+"Kulturindustrie (Anfang)"],
+["HA","Der Zuschauer soll keiner eigenen Gedanken bedürfen: das Produkt zeichnet jede Reaktion vor.",DA+"Kulturindustrie"],
+["H","Wer aber vom Kapitalismus nicht reden will, sollte auch vom Faschismus schweigen.","Die Juden und Europa (1939)"],
+["H","Was wir Sinn nennen, wird verschwinden.","Titel des SPIEGEL-Gesprächs mit Horkheimer, 1970"],
+["B","Es ist niemals ein Dokument der Kultur, ohne zugleich ein solches der Barbarei zu sein.",UG+"These VII"],
+["B","Die Tradition der Unterdrückten belehrt uns darüber, daß der ›Ausnahmezustand‹, in dem wir leben, die Regel ist.",UG+"These VIII"],
+["B","Dieser Sturm ist das, was wir den Fortschritt nennen.",UG+"These IX (Engel der Geschichte)"],
+["B","Daß es ›so weiter‹ geht, ist die Katastrophe.","Zentralpark (1938/39)"],
+["B","Was im Zeitalter der technischen Reproduzierbarkeit des Kunstwerks verkümmert, das ist seine Aura.","Das Kunstwerk im Zeitalter seiner technischen Reproduzierbarkeit"],
+["B","Die Menschheit lässt ihre eigene Vernichtung als ästhetischen Genuß ersten Ranges erleben.","Kunstwerk-Aufsatz, Schluss (gekürzt)"],
+["B","Im Kapitalismus ist eine Religion zu erblicken.","Kapitalismus als Religion (1921, Fragment)"],
+["B","Ich habe nichts zu sagen. Nur zu zeigen.","Das Passagen-Werk, N 1a,8"],
+["B","Vielleicht sind die Revolutionen der Griff des in diesem Zug reisenden Menschengeschlechts nach der Notbremse.","Paralipomena zu »Über den Begriff der Geschichte«"],
+["B","Langeweile ist der Traumvogel, der das Ei der Erfahrung ausbrütet.","Der Erzähler (1936)"],
+["B","Nur um der Hoffnungslosen willen ist uns die Hoffnung gegeben.","Goethes Wahlverwandtschaften (1924/25), Schluss"],
+["M","Eine komfortable, reibungslose, vernünftige, demokratische Unfreiheit herrscht in der fortgeschrittenen Industriegesellschaft, ein Zeichen technischen Fortschritts.",ED+"Einleitung"],
+["M","Die Menschen erkennen sich in ihren Waren wieder; sie finden ihre Seele in ihrem Automobil, Hi-Fi-Gerät, Split-Level-Haus, Küchenausstattung.",ED+"Kap. 1"],
+["M","Die meisten der herrschenden Bedürfnisse, sich zu entspannen, sich zu vergnügen, sich zu benehmen und zu konsumieren, wie die anderen es tun, … fallen in die Kategorie der falschen Bedürfnisse.",ED+"Kap. 1"]
+];
+
+/* Spruchfolge: jeder Spruch einmal, erst nach allen 32 beginnt es von vorn */
+let Qs=load('noetigste.q',{order:[],pos:0,last:-1});
+function qSave(){try{localStorage.setItem('noetigste.q',JSON.stringify(Qs));}catch(e){}}
+function qShuffle(){
+  const a=Q.map((_,i)=>i);
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  if(a.length>1&&a[0]===Qs.last){const k=1+Math.floor(Math.random()*(a.length-1));[a[0],a[k]]=[a[k],a[0]];}
+  Qs.order=a;Qs.pos=0;
+}
+function qPeek(){
+  if(!Qs.order||Qs.order.length!==Q.length||Qs.pos>=Qs.order.length)qShuffle();
+  return {q:Q[Qs.order[Qs.pos]],n:Qs.pos+1};
+}
+function qAdvance(){
+  if(!Qs.order||Qs.pos>=Qs.order.length)qShuffle();
+  Qs.last=Qs.order[Qs.pos];Qs.pos++;qSave();
+}
+
+/* ---------- Wetter (Open-Meteo) ---------- */
+const WMO={0:['Klar','sun'],1:['Überwiegend klar','sun'],2:['Wolkig','part'],3:['Bedeckt','cloud'],45:['Nebel','fog'],48:['Reifnebel','fog'],
+51:['Leichter Nieselregen','rain'],53:['Nieselregen','rain'],55:['Starker Nieselregen','rain'],56:['Gefrierender Nieselregen','rain'],57:['Gefrierender Nieselregen','rain'],
+61:['Leichter Regen','rain'],63:['Regen','rain'],65:['Starker Regen','rain'],66:['Gefrierender Regen','rain'],67:['Gefrierender Regen','rain'],
+71:['Leichter Schneefall','snow'],73:['Schneefall','snow'],75:['Starker Schneefall','snow'],77:['Schneegriesel','snow'],
+80:['Leichte Regenschauer','rain'],81:['Regenschauer','rain'],82:['Heftige Regenschauer','rain'],85:['Schneeschauer','snow'],86:['Starke Schneeschauer','snow'],
+95:['Gewitter','thunder'],96:['Gewitter mit Hagel','thunder'],99:['Schweres Gewitter mit Hagel','thunder']};
+const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+async function getWeather(){
+  const u='https://api.open-meteo.com/v1/forecast?latitude='+cfg.lat+'&longitude='+cfg.lon+
+   '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset'+
+   '&hourly=precipitation_probability&timezone=Europe%2FBerlin&forecast_days=4';
+  const r=await fetch(u);if(!r.ok)throw new Error('Open-Meteo '+r.status);
+  const j=await r.json(),d=j.daily,h=j.hourly;
+  const today=d.time[0],now=new Date();
+  const nowH=+new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',hour:'numeric',hour12:false}).format(now);
+  const slots=[['morgens',6,11],['mittags',11,15],['nachmittags',15,19],['abends',19,23]].map(([n,a,b])=>{
+    let m=null;h.time.forEach((t,i)=>{if(t.slice(0,10)!==today)return;const hh=+t.slice(11,13);if(hh>=a&&hh<b){const v=h.precipitation_probability[i];if(v!=null&&(m===null||v>m))m=v;}});
+    return {n,a,b,v:m};
+  }).filter(s=>s.v!==null&&s.b>nowH);
+  const code=d.weather_code[0],w=WMO[code]||['Wetter','cloud'];
+  return {hi:d.temperature_2m_max[0],lo:d.temperature_2m_min[0],pm:d.precipitation_probability_max[0],txt:w[0],icon:w[1],
+    rise:d.sunrise[0].slice(11,16),set:d.sunset[0].slice(11,16),slots,
+    out:[1,2,3].map(i=>({d:WD[new Date(d.time[i]+'T12:00:00').getDay()],hi:d.temperature_2m_max[i],pm:d.precipitation_probability_max[i]}))};
+}
+
+/* ---------- Nachrichten (RSS) ---------- */
+const PUB_PROXIES=['https://api.allorigins.win/raw?url={url}','https://corsproxy.io/?url={url}'];
+async function fetchText(u){
+  const tries=[];
+  if(cfg.proxy)tries.push(cfg.proxy.replace('{url}',encodeURIComponent(u)));
+  else{tries.push(u);PUB_PROXIES.forEach(p=>tries.push(p.replace('{url}',encodeURIComponent(u))));}
+  let last=null;
+  for(const t of tries){
+    try{
+      const ac=new AbortController(),to=setTimeout(()=>ac.abort(),9000);
+      const r=await fetch(t,{signal:ac.signal});clearTimeout(to);
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const x=await r.text();if(x.length<50)throw new Error('leer');
+      return x;
+    }catch(e){last=e;}
+  }
+  throw last||new Error('Feed nicht erreichbar');
+}
+function splitTitle(t){
+  t=t.replace(/\s+/g,' ').trim();
+  const i=t.indexOf(': ');
+  if(i>2&&i<=44&&!/^\d{1,2}$/.test(t.slice(0,i)))return {k:t.slice(0,i),t:t.slice(i+2)};
+  return {k:'',t};
+}
+async function getFeed(f){
+  const x=await fetchText(f.u);
+  const doc=new DOMParser().parseFromString(x,'text/xml');
+  const out=[];
+  doc.querySelectorAll('item,entry').forEach(it=>{
+    const tt=(it.querySelector('title')||{}).textContent||'';
+    if(!tt.trim())return;
+    if(/^(tagesschau|tagesthemen|nachtmagazin)\b/i.test(tt.trim()))return;
+    let lk=(it.querySelector('link')||{}).textContent||'';
+    if(!lk){const l=it.querySelector('link');if(l)lk=l.getAttribute('href')||'';}
+    const s=splitTitle(tt);
+    out.push({src:f.n,k:s.k,t:s.t,id:(lk||tt).trim()});
+  });
+  return out;
+}
+async function getNews(){
+  const res=await Promise.allSettled(cfg.feeds.map(getFeed));
+  const out=[];
+  res.forEach((r,i)=>{
+    if(r.status==='fulfilled')r.value.slice(0,cfg.perFeed).forEach(x=>out.push(x));
+    else log('Feed '+cfg.feeds[i].n+': '+r.reason.message);
+  });
+  if(!out.length)throw new Error('Keine Feeds erreichbar');
+  return out;
+}
+
+/* ---------- Kalender (Google, Browser-Anmeldung) ---------- */
+let gTok=null,gExp=0,gClient=null;
+function loadGsi(){
+  return new Promise((ok,no)=>{
+    if(window.google&&google.accounts&&google.accounts.oauth2)return ok();
+    const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=ok;s.onerror=()=>no(new Error('Google-Skript nicht ladbar'));
+    document.head.appendChild(s);
+  });
+}
+async function gToken(){
+  if(!cfg.clientId)throw new Error('Keine Client-ID');
+  if(gTok&&Date.now()<gExp-60000)return gTok;
+  await loadGsi();
+  return new Promise((ok,no)=>{
+    gClient=google.accounts.oauth2.initTokenClient({client_id:cfg.clientId,scope:'https://www.googleapis.com/auth/calendar.readonly',
+      callback:r=>{if(r.error)return no(new Error(r.error));gTok=r.access_token;gExp=Date.now()+(+r.expires_in||3600)*1000;ok(gTok);},
+      error_callback:e=>no(new Error(e.type==='popup_failed_to_open'?'Google-Fenster blockiert, bitte noch einmal auf Drucken tippen':(e.type||'Anmeldung abgebrochen')))});
+    gClient.requestAccessToken({prompt:''});
+  });
+}
+async function gApi(path,retry){
+  const t=await gToken();
+  const r=await fetch('https://www.googleapis.com/calendar/v3/'+path,{headers:{Authorization:'Bearer '+t}});
+  if(r.status===401&&!retry){gTok=null;return gApi(path,true);}
+  if(!r.ok)throw new Error('Google '+r.status);
+  return r.json();
+}
+const WANT=[/^primary$/,/geburtstage/i,/feiertage in schweden/i,/stadtgesellschaft/i,/termine von freunden/i,/^familie$/i];
+async function loadCals(){
+  const j=await gApi('users/me/calendarList?maxResults=250');
+  cfg.cals=(j.items||[]).map(c=>({id:c.id,n:c.summaryOverride||c.summary||c.id,on:c.primary?1:(WANT.some(re=>re.test(c.summary||''))?1:0),primary:!!c.primary}));
+  cfg.calsDone=true;save();drawCals();
+}
+function drawCals(){
+  const b=$('#cals');b.innerHTML='';
+  cfg.cals.forEach((c,i)=>{
+    const d=document.createElement('div');d.className='chk';
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!c.on;
+    cb.onchange=()=>{c.on=cb.checked?1:0;save();};
+    const sp=document.createElement('span');sp.textContent=c.n+(c.primary?' (Hauptkalender)':'');
+    d.appendChild(cb);d.appendChild(sp);b.appendChild(d);
+  });
+}
+function dayStart(d){const x=new Date(d);x.setHours(0,0,0,0);return x;}
+async function getEvents(){
+  const on=cfg.cals.filter(c=>c.on);
+  if(!on.length)throw new Error('Keine Kalender gewählt');
+  const t0=dayStart(new Date()),t1=new Date(t0.getTime()+8*864e5);
+  const qs='timeMin='+encodeURIComponent(t0.toISOString())+'&timeMax='+encodeURIComponent(t1.toISOString())+'&singleEvents=true&orderBy=startTime&maxResults=30';
+  const res=await Promise.allSettled(on.map(c=>gApi('calendars/'+encodeURIComponent(c.id)+'/events?'+qs).then(j=>(j.items||[]).map(e=>({e,c})))));
+  const ev=[];
+  res.forEach((r,i)=>{
+    if(r.status!=='fulfilled'){log('Kalender '+on[i].n+': '+r.reason.message);return;}
+    r.value.forEach(({e,c})=>{
+      if(e.status==='cancelled')return;
+      const all=!!(e.start&&e.start.date);
+      const s=all?new Date(e.start.date+'T00:00:00'):new Date(e.start.dateTime);
+      const en=all?new Date(e.end.date+'T00:00:00'):new Date(e.end.dateTime);
+      ev.push({t:e.summary||'(ohne Titel)',all,s,en,special:/geburtstag|feiertag/i.test(c.n)});
+    });
+  });
+  ev.sort((a,b)=>a.s-b.s||(a.all?-1:1));
+  const tomorrow=new Date(t0.getTime()+864e5);
+  const today=ev.filter(x=>x.s<tomorrow&&x.en>t0);
+  const special=today.filter(x=>x.special).map(x=>x.t);
+  const heute=today.filter(x=>!x.special);
+  const next=ev.filter(x=>x.s>=tomorrow&&!x.special).slice(0,cfg.nextN);
+  return {special,heute,next};
+}
+const hm=d=>d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+
+/* ---------- Zeichnen ---------- */
+function wrapText(g,s,w){const out=[];let cur='';for(const wd of s.split(' ')){const t=cur?cur+' '+wd:wd;if(g.measureText(t).width>w&&cur){out.push(cur);cur=wd;}else cur=t;}if(cur)out.push(cur);return out;}
+function spaced(g,s,x,y,sp,al){let w=-sp;for(const ch of s)w+=g.measureText(ch).width+sp;let cx=al==='center'?x-w/2:x;g.textAlign='left';for(const ch of s){g.fillText(ch,cx,y);cx+=g.measureText(ch).width+sp;}return w;}
+function iconWx(g,x,y,kind){
+  g.fillStyle='#000';g.strokeStyle='#000';g.lineCap='round';
+  const cloud=(dx,dy)=>{
+    const sh=[[24,38,14],[40,30,19],[58,40,13]];
+    sh.forEach(s=>{g.beginPath();g.arc(x+dx+s[0],y+dy+s[1],s[2],0,7);g.fill();});
+    g.fillRect(x+dx+12,y+dy+38,58,15);
+    g.fillStyle='#fff';
+    sh.forEach(s=>{g.beginPath();g.arc(x+dx+s[0],y+dy+s[1],s[2]-4,0,7);g.fill();});
+    g.fillRect(x+dx+16,y+dy+38,50,11);
+    g.fillStyle='#000';
+  };
+  const sun=(cx,cy,r)=>{g.beginPath();g.arc(cx,cy,r,0,7);g.fill();g.lineWidth=4;for(let i=0;i<8;i++){const a=i*Math.PI/4;g.beginPath();g.moveTo(cx+Math.cos(a)*(r+6),cy+Math.sin(a)*(r+6));g.lineTo(cx+Math.cos(a)*(r+13),cy+Math.sin(a)*(r+13));g.stroke();}};
+  if(kind==='sun'){sun(x+36,y+36,16);}
+  else if(kind==='part'){sun(x+22,y+24,11);cloud(6,10);}
+  else if(kind==='cloud'){cloud(0,0);}
+  else if(kind==='rain'){cloud(0,-4);g.lineWidth=4;[[26,56,22,68],[40,56,36,68],[54,56,50,68]].forEach(d=>{g.beginPath();g.moveTo(x+d[0],y+d[1]);g.lineTo(x+d[2],y+d[3]);g.stroke();});}
+  else if(kind==='snow'){cloud(0,-4);[[26,62],[40,66],[54,62],[33,72],[47,72]].forEach(p=>{g.fillRect(x+p[0]-2,y+p[1]-2,5,5);});}
+  else if(kind==='fog'){g.lineWidth=5;[24,38,52].forEach((yy,i)=>{g.beginPath();g.moveTo(x+10+i*4,y+yy);g.lineTo(x+60-i*4,y+yy);g.stroke();});}
+  else if(kind==='thunder'){cloud(0,-6);g.beginPath();g.moveTo(x+40,y+48);g.lineTo(x+30,y+64);g.lineTo(x+38,y+64);g.lineTo(x+32,y+76);g.lineTo(x+50,y+58);g.lineTo(x+41,y+58);g.lineTo(x+46,y+48);g.fill();}
+}
+function render(D){
+  const cv=document.createElement('canvas');cv.width=W;cv.height=7000;
+  const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,7000);g.fillStyle='#000';g.strokeStyle='#000';
+  let y=12;
+  const rule=h=>{g.fillRect(M,y,CW,h);y+=h;};
+  const para=(s,font,lh,al,x,w)=>{g.font=font;g.textAlign=al;for(const l of wrapText(g,s,w)){y+=lh;g.fillText(l,al==='center'?x+w/2:x,y);}};
+  const head=l=>{y+=12;g.font='bold 14px '+SERIF;g.textAlign='left';const w=spaced(g,l.toUpperCase(),M,y+11,3,'left');g.fillRect(M+w+8,y+7,CW-w-8,2);y+=24;};
+  const now=new Date(),tz='Europe/Berlin';
+  const full=new Intl.DateTimeFormat('de-DE',{timeZone:tz,weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(now);
+  const pp={};new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'numeric',day:'numeric'}).formatToParts(now).forEach(p=>pp[p.type]=+p.value);
+  const N=Math.round((Date.UTC(pp.year,pp.month-1,pp.day)-Date.UTC(pp.year,0,0))/864e5);
+  rule(2);y+=6;
+  g.font='bold 42px '+SERIF;const mw=g.measureText('DAS NÖTIGSTE').width;if(mw>CW)g.font='bold '+Math.floor(42*CW/mw)+'px '+SERIF;
+  y+=36;g.textAlign='center';g.fillText('DAS NÖTIGSTE',W/2,y);
+  y+=8;g.font='italic 17px '+SERIF;y+=15;g.fillText('Tageszeitung im Schmalformat',W/2,y);
+  y+=9;rule(3);y+=3;rule(1);
+  y+=4;g.font='bold 17px '+SERIF;g.textAlign='left';y+=17;g.fillText(full,M,y);
+  g.font='15px '+SERIF;y+=19;g.fillText('Nr. '+N+'  ·  '+cfg.city+'  ·  Preis: ein Blick',M,y);
+  if(D.cal&&D.cal.special.length)para('Heute: '+D.cal.special.join(', '),'italic 15px '+SERIF,19,'left',M,CW);
+  y+=8;rule(1);
+
+  if(D.wx){
+    const w=D.wx;
+    head('Wetter heute');
+    const top=y;
+    iconWx(g,M,top,w.icon);
+    const x0=M+88;
+    g.fillStyle='#000';g.textAlign='left';g.font='bold 15px '+SERIF;g.fillText(cfg.city+', Tagesprognose',x0,top+14);
+    g.font='bold 24px '+SERIF;g.fillText('Hoch '+Math.round(w.hi)+'°  ·  Tief '+Math.round(w.lo)+'°',x0,top+44);
+    g.font='16px '+SERIF;g.fillText('Regenrisiko',x0,top+70);
+    g.font='bold 34px '+SERIF;g.textAlign='right';g.fillText(w.pm+' %',W-M,top+74);
+    y=top+84;
+    para(w.txt,'italic 17px '+SERIF,21,'left',M,CW);
+    if(w.slots.length)para(w.slots.map(s=>s.n+' '+s.v+' %').join('  ·  '),'15px '+SERIF,19,'left',M,CW);
+    para('Ausblick: '+w.out.map(o=>o.d+' '+Math.round(o.hi)+'° · '+o.pm+' %').join('   '),'15px '+SERIF,19,'left',M,CW);
+    y+=12;
+    const sy=y+16;
+    g.beginPath();g.moveTo(M,sy);g.lineTo(M+14,sy);g.lineTo(M+7,sy-12);g.fill();
+    g.font='bold 19px '+SERIF;g.textAlign='left';g.fillText(w.rise,M+20,sy);
+    g.beginPath();g.moveTo(M+128,sy-12);g.lineTo(M+142,sy-12);g.lineTo(M+135,sy);g.fill();
+    g.fillText(w.set,M+148,sy);
+    const mins=(+w.set.slice(0,2)*60+ +w.set.slice(3))-(+w.rise.slice(0,2)*60+ +w.rise.slice(3));
+    g.font='15px '+SERIF;g.textAlign='right';g.fillText(Math.floor(mins/60)+' h '+(mins%60)+' min Licht',W-M,sy);
+    y=sy+10;
+  }
+
+  if(D.cal){
+    head('Heute');
+    if(!D.cal.heute.length)para('Nichts im Kalender. Das Nötigste ist erledigt.','italic 18px '+SERIF,22,'left',M,CW);
+    D.cal.heute.slice(0,6).forEach(e=>row(e.all?'':hm(e.s),e.t));
+    if(D.cal.next.length){
+      y+=4;head('Demnächst');
+      D.cal.next.forEach(e=>row(WD[e.s.getDay()]+(e.all?'':' '+hm(e.s)),e.t));
+    }
+  }
+  function row(lab,txt){
+    g.textAlign='left';
+    if(!lab){g.font='18px '+SERIF;wrapText(g,txt,CW).forEach(l=>{y+=23;g.fillText(l,M,y);});y+=5;return;}
+    g.font='18px '+SERIF;const L=wrapText(g,txt,CW-88);
+    y+=23;g.font='bold 18px '+SERIF;g.fillText(lab,M,y);
+    g.font='18px '+SERIF;L.forEach((l,i)=>{if(i)y+=22;g.fillText(l,M+88,y);});y+=5;
+  }
+
+  if(D.news&&D.news.length){
+    y+=6;head('Aus der Welt');
+    newsBlock(D.news,true);
+  }
+  function newsBlock(items,lead){
+    items.forEach((n,i)=>{
+      if(i){y+=10;for(let x=M;x<W-M;x+=6)g.fillRect(x,y,3,1);y+=4;}
+      y+=4;g.textAlign='left';
+      if(n.k){g.font='bold 14px '+SERIF;wrapText(g,n.k.toUpperCase(),CW).forEach(l=>{y+=17;g.fillText(l,M,y);});y+=2;}
+      const big=lead&&i===0;
+      para(n.t,'bold '+(big?30:22)+'px '+SERIF,big?34:26,'left',M,CW);
+      y+=6;g.font='italic 14px '+SERIF;y+=15;g.textAlign='left';g.fillText(n.src,M,y);y+=4;
+    });
+  }
+
+  if(D.quote){
+    y+=14;
+    const q=D.quote;
+    g.font='italic 21px '+SERIF;const ql=wrapText(g,'„'+q[1]+'“',CW-40);
+    g.font='italic 14px '+SERIF;const sl=wrapText(g,q[2],CW-40);
+    const bh=18+22+10+ql.length*27+10+18+sl.length*18+16;
+    g.fillRect(M,y,CW,3);g.fillRect(M,y+bh-3,CW,3);g.fillRect(M,y,3,bh);g.fillRect(M+CW-3,y,3,bh);
+    g.fillRect(M+7,y+7,CW-14,1);g.fillRect(M+7,y+bh-8,CW-14,1);g.fillRect(M+7,y+7,1,bh-14);g.fillRect(M+CW-8,y+7,1,bh-14);
+    const by=y;y+=32;
+    g.font='bold 16px '+SERIF;spaced(g,'DIE GESTIRNE',W/2,y,4,'center');
+    [M+22,W-M-22-8].forEach(sx=>{g.fillRect(sx+3,y-14,2,8);g.fillRect(sx,y-11,8,2);});
+    y+=2;g.textAlign='center';g.font='italic 21px '+SERIF;
+    ql.forEach(l=>{y+=27;g.fillText(l,W/2,y);});
+    y+=10;g.font='bold 14px '+SERIF;y+=18;g.fillText(NAMES[q[0]].toUpperCase(),W/2,y);
+    g.font='italic 14px '+SERIF;
+    sl.forEach(l=>{y+=18;g.fillText(l,W/2,y);});
+    y=by+bh+8;
+  }
+  y+=14;
+  g.font='italic 15px '+SERIF;g.textAlign='center';g.fillText('Ende der Ausgabe',W/2,y);
+  y+=12;for(let x=M;x<W-M;x+=10)g.fillRect(x,y,5,2);
+  y+=20;
+  return crop(cv,y);
+}
+function renderTicker(items){
+  const cv=document.createElement('canvas');cv.width=W;cv.height=7000;
+  const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,7000);g.fillStyle='#000';
+  let y=10;g.fillRect(M,y,CW,2);y+=6;
+  g.font='bold 14px '+SERIF;y+=15;spaced(g,'TICKER  ·  '+hm(new Date()),M,y,3,'left');
+  y+=8;
+  items.forEach((n,i)=>{
+    for(let x=M;x<W-M;x+=6)g.fillRect(x,y,3,1);y+=4;
+    g.textAlign='left';
+    if(n.k){g.font='bold 14px '+SERIF;wrapText(g,n.k.toUpperCase(),CW).forEach(l=>{y+=17;g.fillText(l,M,y);});y+=2;}
+    g.font='bold 22px '+SERIF;wrapText(g,n.t,CW).forEach(l=>{y+=26;g.fillText(l,M,y);});
+    y+=6;g.font='italic 14px '+SERIF;y+=15;g.fillText(n.src,M,y);y+=8;
+  });
+  y+=6;for(let x=M;x<W-M;x+=10)g.fillRect(x,y,5,2);y+=18;
+  return crop(cv,y);
+}
+function crop(cv,h){
+  const o=document.createElement('canvas');o.width=W;o.height=h;const c=o.getContext('2d');
+  c.drawImage(cv,0,0,W,h,0,0,W,h);
+  const d=c.getImageData(0,0,W,h),p=d.data;
+  for(let i=0;i<p.length;i+=4){const v=(p[i]*0.3+p[i+1]*0.59+p[i+2]*0.11)<150?0:255;p[i]=p[i+1]=p[i+2]=v;p[i+3]=255;}
+  c.putImageData(d,0,0);return o;
+}
+
+/* ---------- Drucker (Web Bluetooth) ---------- */
+const SERVICES=[0xff00,0xffe0,0xae30,'49535343-fe7d-4ae5-8fa9-9fafd205e455'];
+const BT={dev:null,ch:null};
+const HEAT=[40,60,80,100,120,140,160,200];
+function btOk(){return !!(navigator.bluetooth&&navigator.bluetooth.requestDevice);}
+async function pickDevice(all){
+  const req=all?{acceptAllDevices:true,optionalServices:SERVICES}:{filters:['T','M','Q','D','P','Phomemo','Mr.in'].map(p=>({namePrefix:p})),optionalServices:SERVICES};
+  BT.dev=await navigator.bluetooth.requestDevice(req);
+  BT.dev.addEventListener('gattserverdisconnected',()=>{BT.ch=null;status('Drucker getrennt','err');log('Verbindung getrennt');});
+}
+async function gattOpen(){
+  const srv=await BT.dev.gatt.connect();
+  let svc=null;
+  for(const u of SERVICES){try{svc=await srv.getPrimaryService(u);break;}catch(e){}}
+  if(!svc)throw new Error('Kein passender Bluetooth-Dienst gefunden');
+  try{BT.ch=await svc.getCharacteristic(0xff02);}
+  catch(e){const cs=await svc.getCharacteristics();BT.ch=cs.find(c=>c.properties.write||c.properties.writeWithoutResponse);if(!BT.ch)throw new Error('Keine Schreibeigenschaft gefunden');}
+  status('Verbunden: '+(BT.dev.name||'Drucker'),'ok');log('Verbunden mit '+(BT.dev.name||'?'));
+}
+async function ensureConn(allowPicker){
+  if(BT.ch&&BT.dev&&BT.dev.gatt.connected)return;
+  if(BT.dev){try{await gattOpen();return;}catch(e){log('Wiederverbinden fehlgeschlagen: '+e.message);}}
+  if(!allowPicker)throw new Error('Drucker nicht verbunden');
+  if(!btOk())throw new Error('Dieser Browser kann kein Web Bluetooth (Chrome oder Edge am Laptop, Chrome auf Android)');
+  try{await pickDevice(false);}catch(e){if(e.name==='NotFoundError')throw e;await pickDevice(true);}
+  await gattOpen();
+}
+async function bsend(bytes){
+  for(let i=0;i<bytes.length;i+=128){
+    const c=bytes.slice(i,Math.min(i+128,bytes.length));
+    if(BT.ch.writeValueWithoutResponse)await BT.ch.writeValueWithoutResponse(c);else await BT.ch.writeValue(c);
+    await sleep(20);
+  }
+}
+function toRaster(cv){
+  const w=cv.width,h=cv.height,wb=w>>3,d=cv.getContext('2d').getImageData(0,0,w,h).data,out=new Uint8Array(wb*h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const p=(y*w+x)*4;
+    if((d[p]*0.3+d[p+1]*0.59+d[p+2]*0.11)<150)out[y*wb+(x>>3)]|=0x80>>(x&7);
+  }
+  return {data:out,wb,h};
+}
+async function printCanvas(cv,onProg){
+  await ensureConn(false);
+  const {data,wb,h}=toRaster(cv);
+  const dens=Math.max(1,Math.min(8,+cfg.density||6));
+  await bsend(new Uint8Array([0x1b,0x40]));await sleep(100);
+  await bsend(new Uint8Array([0x1b,0x37,7,HEAT[dens-1],2]));await sleep(30);
+  await bsend(new Uint8Array([0x1d,0x7c,dens]));await sleep(50);
+  for(let y=0;y<h;y+=256){
+    const rows=Math.min(256,h-y);
+    await bsend(new Uint8Array([0x1d,0x76,0x30,0x00,wb&255,wb>>8,rows&255,rows>>8]));
+    await bsend(data.subarray(y*wb,(y+rows)*wb));
+    if(onProg)onProg(Math.round((y+rows)/h*100));
+  }
+  await sleep(300);
+  let f=Math.max(0,Math.min(1000,+cfg.feed||0));
+  while(f>0){const n=Math.min(f,250);await bsend(new Uint8Array([0x1b,0x4a,n]));f-=n;}
+  await sleep(800);
+}
+async function ping(mode){
+  await ensureConn(false);
+  if(mode==='init')await bsend(new Uint8Array([0x1b,0x40]));
+  else if(mode==='feed')await bsend(new Uint8Array([0x1b,0x4a,1]));
+  else{
+    await bsend(new Uint8Array([0x1b,0x40]));
+    await bsend(new Uint8Array([0x1d,0x76,0x30,0x00,48,0,8,0]));
+    await bsend(new Uint8Array(48*8));
+  }
+}
+
+/* ---------- Ablauf ---------- */
+let curCv=null,busy=false;
+function show(cv){curCv=cv;const c=$('#cv');c.width=cv.width;c.height=cv.height;c.getContext('2d').drawImage(cv,0,0);}
+async function collect(){
+  const D={};
+  const jobs=[];
+  if(cfg.sec.wetter)jobs.push(getWeather().then(v=>D.wx=v).catch(e=>log('Wetter: '+e.message)));
+  if(cfg.sec.news)jobs.push(getNews().then(v=>D.news=v).catch(e=>log('Nachrichten: '+e.message)));
+  if(cfg.sec.kal&&cfg.clientId&&cfg.calsDone)jobs.push(getEvents().then(v=>D.cal=v).catch(e=>log('Kalender: '+e.message)));
+  else if(cfg.sec.kal)log('Kalender übersprungen (Client-ID eintragen und Kalender laden)');
+  await Promise.all(jobs);
+  if(cfg.sec.gest)D.quote=qPeek().q;
+  return D;
+}
+async function preview(){
+  status('Hole Daten …');
+  const D=await collect();
+  show(render(D));
+  status(BT.ch&&BT.dev&&BT.dev.gatt.connected?'Verbunden: '+(BT.dev.name||'Drucker'):'Drucker nicht verbunden',BT.ch?'ok':'');
+  return D;
+}
+async function doPrint(){
+  if(busy)return;busy=true;$('#bPrint').disabled=true;
+  try{
+    await ensureConn(true);
+    status('Hole Daten …');
+    const D=await collect();
+    const cv=render(D);show(cv);
+    status('Drucke …');
+    await printCanvas(cv,p=>status('Drucke … '+p+' %'));
+    if(D.quote)qAdvance();
+    status('Fertig. Verbunden: '+(BT.dev.name||'Drucker'),'ok');log('Briefing gedruckt ('+cv.height+' Zeilen)');
+  }catch(e){status(e.message||String(e),'err');log('Fehler: '+(e.message||e));}
+  finally{busy=false;$('#bPrint').disabled=false;}
+}
+async function testPrint(){
+  try{
+    await ensureConn(true);
+    const cv=document.createElement('canvas');cv.width=W;cv.height=190;const g=cv.getContext('2d');
+    g.fillStyle='#fff';g.fillRect(0,0,W,190);g.fillStyle='#000';
+    g.fillRect(0,0,W,3);g.fillRect(0,187,W,3);g.fillRect(0,0,3,190);g.fillRect(W-3,0,3,190);
+    g.font='bold 40px '+SERIF;g.textAlign='center';g.fillText('Testdruck',W/2,80);
+    g.font='italic 20px '+SERIF;g.fillText('384 Punkte breit, 1 Bit',W/2,118);
+    for(let i=0;i<8;i++){g.fillStyle='rgba(0,0,0,'+(i+1)/8+')';g.fillRect(20+i*43,140,43,28);}
+    await printCanvas(cv);status('Testdruck gesendet','ok');
+  }catch(e){status(e.message,'err');log('Fehler: '+e.message);}
+}
+
+/* ---------- Wachhalten / Ticker ---------- */
+let wl=null;
+async function wakeOn(){try{if(navigator.wakeLock&&!wl){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null;});}}catch(e){}}
+function wakeOff(){try{if(wl){wl.release();wl=null;}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&(ka.on||tk.on))wakeOn();});
+function pastEnd(v){if(!v)return false;const[h,m]=v.split(':').map(Number),n=new Date(),e=new Date();e.setHours(h,m,0,0);return n>=e;}
+const ka={on:false,n:0,t:null};
+async function kaTick(){
+  if(!ka.on)return;
+  if(pastEnd($('#kaEnd').value)){kaStop('Endzeit erreicht');return;}
+  try{await ping($('#kaMode').value);ka.n++;log('Lebenszeichen '+ka.n+' gesendet ('+$('#kaMode').value+')');}
+  catch(e){log('Lebenszeichen fehlgeschlagen: '+e.message);}
+  ka.t=setTimeout(kaTick,Math.max(1,+$('#kaMin').value||5)*60000);
+}
+function kaStart(){ka.on=true;ka.n=0;$('#kaStart').disabled=true;$('#kaStop').disabled=false;wakeOn();log('Dauerlauf-Test gestartet');kaTick();}
+function kaStop(why){ka.on=false;clearTimeout(ka.t);$('#kaStart').disabled=false;$('#kaStop').disabled=true;if(!tk.on)wakeOff();log('Dauerlauf-Test beendet'+(why?' ('+why+')':''));}
+const tk={on:false,t:null,seen:new Set()};
+try{JSON.parse(localStorage.getItem('noetigste.seen')||'[]').forEach(x=>tk.seen.add(x));}catch(e){}
+function seenSave(){try{localStorage.setItem('noetigste.seen',JSON.stringify([...tk.seen].slice(-400)));}catch(e){}}
+async function tkTick(first){
+  if(!tk.on)return;
+  if(pastEnd($('#tkEnd').value)){tkStop('Endzeit erreicht');return;}
+  try{
+    const items=await getNews();
+    const fresh=items.filter(x=>!tk.seen.has(x.id));
+    items.forEach(x=>tk.seen.add(x.id));seenSave();
+    const out=(first&&!$('#tkFirst').checked)?[]:fresh;
+    if(out.length){await printCanvas(renderTicker(out));log('Ticker: '+out.length+' neue Meldungen gedruckt');}
+    else log('Ticker: nichts Neues');
+  }catch(e){log('Ticker: '+e.message);}
+  tk.t=setTimeout(()=>tkTick(false),Math.max(1,+$('#tkMin').value||15)*60000);
+}
+async function tkStart(){
+  try{await ensureConn(true);}catch(e){status(e.message,'err');return;}
+  tk.on=true;$('#tkStart').disabled=true;$('#tkStop').disabled=false;wakeOn();log('Ticker gestartet');tkTick(true);
+}
+function tkStop(why){tk.on=false;clearTimeout(tk.t);$('#tkStart').disabled=false;$('#tkStop').disabled=true;if(!ka.on)wakeOff();log('Ticker beendet'+(why?' ('+why+')':''));}
+
+/* ---------- Oberfläche ---------- */
+function fill(){
+  $('#city').value=cfg.city;$('#lat').value=cfg.lat;$('#lon').value=cfg.lon;
+  $('#perFeed').value=cfg.perFeed;$('#nextN').value=cfg.nextN;$('#density').value=cfg.density;$('#feed').value=cfg.feed;
+  $('#feeds').value=cfg.feeds.map(f=>f.n+' | '+f.u).join('\n');
+  $('#proxy').value=cfg.proxy;$('#clientId').value=cfg.clientId;
+  $('#sWetter').checked=!!cfg.sec.wetter;$('#sKal').checked=!!cfg.sec.kal;$('#sNews').checked=!!cfg.sec.news;$('#sGest').checked=!!cfg.sec.gest;
+  drawCals();
+}
+function bind(){
+  const num=(id,k)=>$(id).addEventListener('change',e=>{cfg[k]=+e.target.value;save();});
+  const txt=(id,k)=>$(id).addEventListener('change',e=>{cfg[k]=e.target.value.trim();save();});
+  txt('#city','city');num('#lat','lat');num('#lon','lon');num('#perFeed','perFeed');num('#nextN','nextN');num('#density','density');num('#feed','feed');
+  txt('#proxy','proxy');txt('#clientId','clientId');
+  $('#feeds').addEventListener('change',e=>{
+    cfg.feeds=e.target.value.split('\n').map(l=>l.split('|').map(s=>s.trim())).filter(a=>a.length>=2&&/^https?:/.test(a[1])).map(a=>({n:a[0],u:a[1]}));save();
+  });
+  [['#sWetter','wetter'],['#sKal','kal'],['#sNews','news'],['#sGest','gest']].forEach(([id,k])=>$(id).addEventListener('change',e=>{cfg.sec[k]=e.target.checked?1:0;save();}));
+  $('#bGeo').onclick=()=>{
+    if(!navigator.geolocation){status('Kein Standort verfügbar','err');return;}
+    navigator.geolocation.getCurrentPosition(p=>{cfg.lat=+p.coords.latitude.toFixed(4);cfg.lon=+p.coords.longitude.toFixed(4);cfg.city='Standort';save();fill();status('Standort übernommen');},()=>status('Standort nicht erlaubt','err'),{timeout:8000});
+  };
+  $('#bCals').onclick=async()=>{try{status('Lade Kalender …');await loadCals();status('Kalender geladen');}catch(e){status(e.message,'err');log('Kalender: '+e.message);}};
+  $('#bConn').onclick=async()=>{try{await ensureConn(true);}catch(e){if(e.name!=='NotFoundError'){status(e.message,'err');log('Fehler: '+e.message);}}};
+  $('#bPrint').onclick=doPrint;
+  $('#bPrev').onclick=()=>preview().catch(e=>status(e.message,'err'));
+  $('#bTest').onclick=testPrint;
+  $('#bPng').onclick=()=>{
+    if(!curCv)return;
+    curCv.toBlob(async b=>{
+      const f=new File([b],'das-noetigste.png',{type:'image/png'});
+      try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}}catch(e){if(e.name==='AbortError')return;}
+      const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='das-noetigste.png';a.click();
+    },'image/png');
+  };
+  $('#kaStart').onclick=()=>kaStart();$('#kaStop').onclick=()=>kaStop('gestoppt');
+  $('#tkStart').onclick=()=>tkStart();$('#tkStop').onclick=()=>tkStop('gestoppt');
+}
+fill();bind();
+if(!btOk())status('Kein Web Bluetooth in diesem Browser. Vorschau und Bild gehen trotzdem.','err');
+preview().catch(e=>{status(e.message,'err');log('Fehler: '+e.message);});
+</script>
+</body>
+</html>
