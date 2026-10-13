@@ -35,6 +35,7 @@ textarea{min-height:76px;font-family:ui-monospace,Menlo,monospace;font-size:12.5
 .chk input{width:auto}
 .small{font-size:12.5px;color:var(--mut);margin:6px 0 0}
 #cals .chk{margin:2px 0}
+#foot{margin-top:18px}#foot a{color:inherit}
 pre{margin:0;max-height:220px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;background:var(--hl);padding:8px 10px;border-radius:7px}
 </style>
 </head>
@@ -114,6 +115,8 @@ pre{margin:0;max-height:220px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,mo
 <summary>Protokoll</summary>
 <pre id="log"></pre>
 </details>
+
+<p class="small" id="foot">Experimentelles, nicht kommerzielles Privatprojekt, ohne Verbindung zu Phomemo. Wetterdaten: <a href="https://open-meteo.com/">Open-Meteo.com</a> (<a href="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a>). Schlagzeilen: Rechte bei den jeweiligen Redaktionen. Zitate: Rechte bei den Autoren und Verlagen. <a href="https://github.com/lepettre/t02briefing#quellen-dienste-und-lizenzen">Quellen und Lizenzen</a></p>
 
 <script>
 "use strict";
@@ -395,6 +398,7 @@ function render(D){
     para(w.txt,'italic 17px '+SERIF,21,'left',M,CW);
     if(w.slots.length)para(w.slots.map(s=>s.n+' '+s.v+' %').join('  ·  '),'15px '+SERIF,19,'left',M,CW);
     para('Ausblick: '+w.out.map(o=>o.d+' '+Math.round(o.hi)+'° · '+o.pm+' %').join('   '),'15px '+SERIF,19,'left',M,CW);
+    para('Wetterdaten: Open-Meteo.com (CC BY 4.0)','italic 13px '+SERIF,16,'left',M,CW);
     y+=12;
     const sy=y+16;
     g.beginPath();g.moveTo(M,sy);g.lineTo(M+14,sy);g.lineTo(M+7,sy-12);g.fill();
