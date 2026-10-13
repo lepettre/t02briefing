@@ -27,7 +27,7 @@ Alles läuft im Browser. Es gibt keinen eigenen Server und keine Datenbank; Eins
 
 1. **Hosten.** `index.html` über GitHub Pages ausliefern (HTTPS ist Pflicht für Bluetooth). In der Datei stehen keine Kalender-IDs, Adressen oder Zugangsdaten; alles Persönliche bleibt im Browser.
 2. **Browser.** Chrome oder Edge am Laptop, Chrome auf Android. Safari und iPhone können kein Web Bluetooth (dort nur „Als Bild teilen“ und über die Phomemo-App drucken).
-3. **Drucker verbinden.** „Drucker verbinden“ tippen, T02 auswählen. Danach „Testdruck“ (unter „Dauerlauf-Test“).
+3. **Drucker verbinden.** „Verbinden“ tippen, T02 auswählen. Danach „Testdruck“ (Reiter „Dauerlauf“).
 4. **Nachrichten.** Direktaufrufe der Feeds scheitern meist an CORS. Zwei Wege:
    - Standard: Die Seite probiert direkt und dann zwei öffentliche Proxys (unzuverlässig, nur für öffentliche Feeds).
    - Besser: `worker.js` in einen eigenen Cloudflare Worker kopieren, dann in den Einstellungen bei „Eigener Proxy“ eintragen: `https://DEIN-WORKER.workers.dev/?url={url}`
@@ -44,9 +44,11 @@ Die Druckbefehle folgen dem Protokoll, wie es das Projekt phomymo beschreibt (Bl
 
 ## Dauerlauf und Ticker
 
-- **Dauerlauf-Test:** sendet alle N Minuten ein Lebenszeichen (nur Initialisierung, 1 Punkt Vorschub oder eine Leerzeile). Ob der T02 davon wach bleibt, ist offen; deshalb zuerst mit „Nur Initialisierung“ testen und nach der Zeit nachsehen.
+Beide haben einen eigenen Reiter oben auf der Seite; ein grüner Punkt zeigt, was gerade läuft.
+
+- **Dauerlauf-Test:** prüft, ob der Drucker für den Dauerbetrieb taugt, also stundenlang bereitsteht, um etwa den Ticker fortlaufend zu drucken. Er sendet alle N Minuten ein Lebenszeichen (nur Initialisierung, 1 Punkt Vorschub oder eine Leerzeile). Ob der T02 davon wach bleibt, ist offen; deshalb zuerst mit „Nur Initialisierung“ testen und nach der Zeit nachsehen.
 - **Ticker:** druckt in festem Abstand nur neue Meldungen. Das Fenster muss offen bleiben; der Bildschirm bleibt dafür per Wake Lock an.
-- Nach einem Verbindungsabbruch versucht die Seite, sich ohne neuen Dialog wieder zu verbinden; klappt das nicht, hilft ein Tipp auf „Drucker verbinden“.
+- Nach einem Verbindungsabbruch versucht die Seite, sich ohne neuen Dialog wieder zu verbinden; klappt das nicht, hilft ein Tipp auf „Verbinden“.
 
 ## Quellen, Dienste und Lizenzen
 
