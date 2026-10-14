@@ -42,13 +42,55 @@ Alles läuft im Browser. Es gibt keinen eigenen Server und keine Datenbank; Eins
 
 Die Druckbefehle folgen dem Protokoll, wie es das Projekt phomymo beschreibt (Bluetooth-Dienst 0xFF00, Schreibmerkmal 0xFF02, ESC/POS-Raster `GS v 0`, Blöcke zu je 256 Zeilen). Getestet ist alles nur gegen einen simulierten Drucker. Erst mit einem Testdruck prüfen, dann das Briefing. Ist Schwarz zu blass oder zu dunkel: „Druckdichte“ in den Einstellungen.
 
-## Dauerlauf und Ticker
+## Reiter
 
-Beide haben einen eigenen Reiter oben auf der Seite; ein grüner Punkt zeigt, was gerade läuft.
+Oben auf der Seite gibt es vier Reiter; ein grüner Punkt zeigt, was gerade läuft.
 
-- **Dauerlauf-Test:** prüft, ob der Drucker für den Dauerbetrieb taugt, also stundenlang bereitsteht, um etwa den Ticker fortlaufend zu drucken. Er sendet alle N Minuten ein Lebenszeichen (nur Initialisierung, 1 Punkt Vorschub oder eine Leerzeile). Ob der T02 davon wach bleibt, ist offen; deshalb zuerst mit „Nur Initialisierung“ testen und nach der Zeit nachsehen.
-- **Ticker:** druckt in festem Abstand nur neue Meldungen. Das Fenster muss offen bleiben; der Bildschirm bleibt dafür per Wake Lock an.
-- Nach einem Verbindungsabbruch versucht die Seite, sich ohne neuen Dialog wieder zu verbinden; klappt das nicht, hilft ein Tipp auf „Verbinden“.
+### Briefing
+Die Morgenzeitung wie oben beschrieben, mit Vorschau und allen Einstellungen.
+
+### Ticker
+Die Rolle wird zum Fernschreiber. Jede angehakte Quelle wird in ihrem eigenen Abstand abgefragt; gedruckt wird nur, was neu ist. Das Fenster muss offen bleiben, der Bildschirm bleibt dafür per Wake Lock an. Alle Druckaufträge laufen über eine Warteschlange, es druckt nie zweimal gleichzeitig.
+
+| Quelle | Was gedruckt wird | Daten |
+|---|---|---|
+| Nachrichten | neue Schlagzeilen, Doppelte über Feeds hinweg ausgelassen | RSS-Feeds aus den Einstellungen |
+| Wetter-Seismograf | jede Stunde eine schmale Zeile mit Temperatur und Regenrisiko; die Punkte ergeben über den Tag eine Kurve (ohne Vorschub dazwischen) | Open-Meteo |
+| Sonnenlauf | Morgendämmerung, Sonnenaufgang mit Tageslänge, Mittag, Sonnenuntergang mit Mondphase, Ende der Dämmerung | eigene Berechnung |
+| Warnungen | neue Warnungen und Entwarnungen für den eingestellten Kreis | NINA (enthält DWD-Unwetter, Hochwasser, MoWaS) |
+| Pegel und Gezeiten | jedes Hoch- und Niedrigwasser mit Uhrzeit und Stand, etwa 1½ Stunden danach aus den Messwerten bestätigt | pegelonline, Standard: Hamburg St. Pauli |
+| Abfahrten | Abfahrtstafel der gewählten Haltestelle mit Verspätungen und Ausfällen | transport.rest (Daten der Deutschen Bahn) |
+| Erdbeben | Beben weltweit ab einstellbarer Stärke (Standard 5,0) | USGS |
+| Bundestag | neue Drucksachen, filterbar nach Art (Standard: Gesetzentwürfe, Beschlussempfehlungen) | DIP des Bundestags, eigener API-Schlüssel nötig |
+| Bundesliga | jedes Tor mit Minute und Schütze, dann der Endstand; auf Wunsch nur ein Verein | OpenLigaDB |
+
+Beim Start wird Vorhandenes nur gedruckt, wenn „Beim Start auch schon Vorhandenes drucken“ angehakt ist. Seismograf, Sonnenlauf und Abfahrten drucken immer.
+
+Einrichten:
+- **Haltestelle:** Name eingeben, „Suchen“, die gefundene Haltestelle wird übernommen.
+- **Warnungen:** Regionalschlüssel des Kreises; Hamburg ist `020000000000`.
+- **Bundestag:** Den API-Schlüssel für das DIP gibt es kostenlos beim Bundestag (Anleitung auf [dip.bundestag.de](https://dip.bundestag.de/über-dip/hilfe/api)); einen allgemeinen Testschlüssel veröffentlicht der Bundestag dort ebenfalls, er wird regelmäßig gewechselt.
+- Scheitern Abfragen an CORS, hilft der eigene Worker; `worker.js` lässt die Ticker-Dienste bereits zu.
+
+### Blätter
+Einzelne Blätter auf Knopfdruck, erst als Vorschau, dann zum Drucken:
+
+- **Abendausgabe:** die Schlagzeilen des Tages, Wetter, Sonnenzeiten und Termine von morgen.
+- **Wochenblatt:** die nächsten sieben Tage mit Wetter und Terminen, vorneweg Geburtstage und Feiertage. Am Wochenende beginnt es mit dem kommenden Montag.
+- **Gedicht:** eins von zwölf gemeinfreien Gedichten (Goethe, Eichendorff, Rilke, Hölderlin, Mörike, Heine, Trakl, Morgenstern, Ringelnatz, Storm). Jedes kommt einmal, dann beginnt die Folge von vorn.
+- **Heute vor … Jahren:** bis zu sechs Ereignisse des Tages aus der deutschen Wikipedia.
+- **Sudoku:** jedes Mal neu erzeugt, eindeutig lösbar, die Lösung klein und kopfüber darunter.
+- **Kassenbon des Tages:** die Termine von heute als Posten, Summe der verplanten Zeit, Rückgeld in freier Zeit.
+- **Bundesliga:** aktueller Spieltag und Tabelle.
+- **Abfahrten:** die Abfahrtstafel sofort.
+- **Notiz:** freier Text als Zettel. Die Adresse `https://lepettre.github.io/t02briefing/?notiz=Text` öffnet die Seite gleich mit fertiger Notiz, zum Beispiel aus einem Kurzbefehl auf dem iPhone. Ist der Drucker in diesem Browser schon einmal verbunden gewesen, verbindet die Seite sich wenn möglich ohne Auswahlfenster.
+
+### Dauerlauf
+Prüft, ob der Drucker für den Dauerbetrieb taugt, also stundenlang bereitsteht, um den Ticker fortlaufend zu drucken. Er sendet alle N Minuten ein Lebenszeichen (nur Initialisierung, 1 Punkt Vorschub oder eine Leerzeile) und zieht beim Stopp Bilanz. Ob der T02 davon wach bleibt, ist offen; deshalb zuerst mit „Nur Initialisierung“ testen und nach der Zeit nachsehen.
+
+Nach einem Verbindungsabbruch versucht die Seite, sich ohne neuen Dialog wieder zu verbinden; klappt das nicht, hilft ein Tipp auf „Verbinden“.
+
+**Ungeprüft:** Die Ticker-Quellen und Blätter sind nur mit nachgebauten Antworten der Dienste getestet, nicht gegen die echten Schnittstellen und nicht am Drucker.
 
 ## Quellen, Dienste und Lizenzen
 
@@ -69,6 +111,19 @@ Die Schlagzeilen gehören den jeweiligen Redaktionen; alle Rechte liegen bei ihn
 ### Die Gestirne: Zitate
 
 Die 32 Zitate stammen aus Werken von Theodor W. Adorno, Max Horkheimer, Walter Benjamin und Herbert Marcuse; die Auswahl ist aus dem Projekt „Halbbildung“ übernommen. Jedes Zitat steht mit Autor und Werk (Titel, Jahr, Stelle) in `index.html` und auf dem Ausdruck. Die Texte von Walter Benjamin († 1940) sind gemeinfrei. Die Werke von Adorno († 1969), Horkheimer († 1973) und Marcuse († 1979) sind urheberrechtlich geschützt; die Rechte liegen bei den Erben und Verlagen (u. a. Suhrkamp Verlag, S. Fischer Verlag). Die Zitate sind kurz, mit Quelle versehen und werden nicht kommerziell genutzt. Ob das im Einzelfall vom Zitatrecht (§ 51 UrhG) gedeckt ist, ist nicht geprüft. Der Satz „Was wir Sinn nennen, wird verschwinden“ ist der Titel eines Gesprächs mit Max Horkheimer im SPIEGEL (1970). Rechteinhaber, die eine Entfernung wünschen, können ein Issue in diesem Repo anlegen.
+
+### Ticker-Dienste und Blätter
+
+- **Warnungen:** [NINA-Schnittstelle](https://warnung.bund.de) des Bundesamts für Bevölkerungsschutz und Katastrophenhilfe (BBK), dokumentiert bei [bund.dev](https://nina.api.bund.dev/). Wetterwarnungen darin stammen vom Deutschen Wetterdienst. Es gelten die Bedingungen des BBK und des DWD.
+- **Pegel:** [pegelonline](https://www.pegelonline.wsv.de) der Wasserstraßen- und Schifffahrtsverwaltung des Bundes (WSV). Die Daten sind ungeprüfte Rohwerte; Quelle: WSV, pegelonline.
+- **Abfahrten:** [transport.rest](https://transport.rest) von Jannis Redmann, eine inoffizielle, freie Schnittstelle zu den Fahrplandaten der Deutschen Bahn. Ohne Gewähr; der Dienst ist zeitweise nicht erreichbar.
+- **Erdbeben:** [U.S. Geological Survey](https://earthquake.usgs.gov/earthquakes/feed/), gemeinfrei (US-Bundesbehörde).
+- **Bundestag:** [DIP – Dokumentations- und Informationssystem für Parlamentsmaterialien](https://dip.bundestag.de), nach den Nutzungsbedingungen der DIP-API und nur mit eigenem Schlüssel.
+- **Bundesliga:** [OpenLigaDB](https://www.openligadb.de), eine freie, von der Community gepflegte Datenbank. Auf dem Blatt steht „Daten: OpenLigaDB“. Vereinsnamen sind Marken ihrer Inhaber.
+- **Heute vor … Jahren:** Texte aus der deutschsprachigen Wikipedia (Seite „Was geschah am …“ über die Wikimedia-Schnittstelle), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.de). Die Namensnennung steht auf jedem Blatt.
+- **Gedichte:** alle gemeinfrei, die Verfasser sind mehr als 70 Jahre tot (zuletzt Ringelnatz, † 1934). Die Texte sind in alter Rechtschreibung nach verbreiteten Ausgaben gesetzt.
+- **Sonne und Mond:** eigene Berechnung nach der bekannten Sonnenstandsformel (Näherung auf etwa eine Minute) und dem mittleren synodischen Monat.
+- **Sudoku und Kassenbon:** eigene Arbeit.
 
 ### Google Kalender
 

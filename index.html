@@ -44,6 +44,10 @@ textarea{min-height:76px;font-family:ui-monospace,Menlo,monospace;font-size:12.5
 .dot.on{visibility:visible}
 .txt{margin:0 0 10px;font-size:14px}
 [hidden]{display:none!important}
+.src{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--bd);padding:6px 0}
+.src .chk{margin:0;align-items:flex-start}.src .chk input{margin-top:4px}.src .small{margin:0}
+.mins{display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap}.mins input{width:64px}
+.sheets button{flex:1 1 150px}
 #foot{margin-top:18px}#foot a{color:inherit}
 pre{margin:0;max-height:220px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;background:var(--hl);padding:8px 10px;border-radius:7px}
 </style>
@@ -57,6 +61,7 @@ pre{margin:0;max-height:220px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,mo
 <nav class="tabs" role="tablist">
   <button role="tab" data-tab="brief">Briefing</button>
   <button role="tab" data-tab="ticker">Ticker<span class="dot" id="tkDot"></span></button>
+  <button role="tab" data-tab="blatt">Blätter</button>
   <button role="tab" data-tab="dauer">Dauerlauf<span class="dot" id="kaDot"></span></button>
 </nav>
 
@@ -101,15 +106,57 @@ pre{margin:0;max-height:220px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,mo
 </section>
 
 <section class="tab" id="t-ticker" hidden>
-<h2>Ticker: neue Meldungen laufend drucken</h2>
-<p class="txt">Die Rolle wird zum Fernschreiber. Die Seite holt in festem Abstand die Feeds aus den Einstellungen und druckt nur Meldungen, die noch nicht auf dem Papier stehen, jeweils mit Uhrzeit. Über den Tag entsteht so ein fortlaufender Streifen der Nachrichtenlage.</p>
-<p class="small">Das Fenster muss offen bleiben; der Bildschirm bleibt dafür an. Ob der Drucker die Pausen zwischen zwei Drucken übersteht, prüft der Reiter „Dauerlauf“.</p>
+<h2>Ticker: laufend auf die Rolle</h2>
+<p class="txt">Die Rolle wird zum Fernschreiber. Jede angehakte Quelle wird in ihrem eigenen Abstand abgefragt; gedruckt wird nur, was neu ist, mit Uhrzeit. Über den Tag entsteht ein fortlaufender Streifen.</p>
+<div id="srcs"></div>
 <div class="g2">
-  <div><label>Abstand (Minuten)</label><input type="number" min="1" max="120" id="tkMin" value="15"></div>
   <div><label>Bis (Uhrzeit, leer = bis Stopp)</label><input type="time" id="tkEnd"></div>
 </div>
-<div class="chk"><input type="checkbox" id="tkFirst"><span>Beim Start auch die aktuellen Meldungen drucken</span></div>
+<div class="chk"><input type="checkbox" id="tkFirst"><span>Beim Start auch schon Vorhandenes drucken</span></div>
 <div class="row" style="margin-top:10px"><button class="primary" id="tkStart">Start</button><button id="tkStop" disabled>Stopp</button></div>
+<p class="small">Das Fenster muss offen bleiben; der Bildschirm bleibt dafür an. Ob der Drucker die Pausen übersteht, prüft der Reiter „Dauerlauf“.</p>
+<details style="margin-top:10px">
+<summary>Einstellungen der Quellen</summary>
+<label>Abfahrten: Haltestelle</label>
+<div class="g2"><input type="text" id="depQ" placeholder="z. B. Sternschanze"><button id="bDep">Suchen</button></div>
+<p class="small" id="depFound"></p>
+<label>Warnungen: Regionalschlüssel (ARS) deines Kreises</label>
+<input type="text" id="ars" placeholder="020000000000">
+<p class="small">Hamburg: 020000000000. Sonst die ersten fünf Ziffern des Kreisschlüssels, Rest Nullen (Liste beim Statistischen Bundesamt).</p>
+<label>Pegel: Messstelle bei pegelonline</label>
+<input type="text" id="pegel" placeholder="HAMBURG ST. PAULI">
+<div class="g2">
+  <div><label>Erdbeben ab Stärke</label><input type="number" min="4.5" max="9" step="0.1" id="eqMin"></div>
+  <div><label>Liga</label><select id="liga"><option value="bl1">1. Bundesliga</option><option value="bl2">2. Bundesliga</option><option value="bl3">3. Liga</option></select></div>
+</div>
+<label>Bundesliga: nur dieser Verein (leer = alle Spiele)</label>
+<input type="text" id="team" placeholder="z. B. Hamburger SV">
+<label>Bundestag: DIP-API-Schlüssel</label>
+<input type="text" id="dipKey" placeholder="beim Bundestag anfragen, siehe README">
+<label>Bundestag: nur diese Arten (mit Komma, leer = alle)</label>
+<input type="text" id="dipTypes">
+</details>
+</section>
+
+<section class="tab" id="t-blatt" hidden>
+<h2>Einzelblätter</h2>
+<p class="txt">Ein Blatt auf Knopfdruck. Erst ansehen, dann drucken.</p>
+<div class="row sheets">
+  <button data-sheet="abend">Abendausgabe</button>
+  <button data-sheet="woche">Wochenblatt</button>
+  <button data-sheet="gedicht">Gedicht</button>
+  <button data-sheet="heute">Heute vor … Jahren</button>
+  <button data-sheet="sudoku">Sudoku</button>
+  <button data-sheet="bon">Kassenbon des Tages</button>
+  <button data-sheet="liga">Bundesliga</button>
+  <button data-sheet="dep">Abfahrten</button>
+</div>
+<label>Notiz</label>
+<textarea id="note" style="font-family:inherit;font-size:14px" placeholder="Text für einen Zettel"></textarea>
+<div class="row" style="margin-top:8px"><button data-sheet="note">Notiz setzen</button></div>
+<p class="small">Tipp: Die Adresse der Seite mit <code>?notiz=Dein Text</code> öffnet direkt eine fertige Notiz, etwa aus einem Kurzbefehl auf dem iPhone.</p>
+<div class="row" style="margin-top:10px"><button class="primary" id="bShPrint" disabled>Blatt drucken</button><button id="bShPng" disabled>Als Bild teilen</button></div>
+<div class="paper"><canvas id="cv2" width="384" height="120"></canvas></div>
 </section>
 
 <section class="tab" id="t-dauer" hidden>
@@ -148,9 +195,12 @@ const DEF={
   city:'Hamburg',lat:53.5511,lon:9.9937,density:6,feed:48,perFeed:4,nextN:3,proxy:'',clientId:'',
   feeds:[{n:'Tagesschau',u:'https://www.tagesschau.de/index~rss2.xml'},{n:'SPIEGEL',u:'https://www.spiegel.de/schlagzeilen/index.rss'}],
   cals:[],calsDone:false,
-  sec:{wetter:1,kal:1,news:1,gest:1}
+  sec:{wetter:1,kal:1,news:1,gest:1},
+  tk:{news:{on:1,min:15},wx:{on:0,min:10},sun:{on:0,min:5},warn:{on:0,min:10},pegel:{on:0,min:20},dep:{on:0,min:30},eq:{on:0,min:15},bt:{on:0,min:60},bl:{on:0,min:3}},
+  depId:'',depName:'',ars:'020000000000',pegel:'HAMBURG ST. PAULI',eqMin:5,dipKey:'',dipTypes:'Gesetzentwurf, Beschlussempfehlung',liga:'bl1',team:''
 };
 let cfg=load('noetigste.cfg',DEF);
+Object.keys(DEF.tk).forEach(k=>{cfg.tk[k]=Object.assign({},DEF.tk[k],cfg.tk[k]);});
 function load(k,d){try{const s=JSON.parse(localStorage.getItem(k)||'null');return s?Object.assign(JSON.parse(JSON.stringify(d)),s):JSON.parse(JSON.stringify(d));}catch(e){return JSON.parse(JSON.stringify(d));}}
 function save(){try{localStorage.setItem('noetigste.cfg',JSON.stringify(cfg));}catch(e){}}
 
@@ -501,18 +551,19 @@ function render(D){
   y+=20;
   return crop(cv,y);
 }
-function renderTicker(items){
+function renderTicker(items,s){
   const cv=document.createElement('canvas');cv.width=W;cv.height=7000;
   const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,7000);g.fillStyle='#000';
   let y=10;g.fillRect(M,y,CW,2);y+=6;
-  g.font='bold 14px '+SERIF;y+=15;spaced(g,'TICKER  ·  '+hm(new Date()),M,y,3,'left');
+  g.font='bold 14px '+SERIF;y+=15;spaced(g,((s&&s.n)||'Ticker').toUpperCase()+'  ·  '+hm(new Date()),M,y,3,'left');
   y+=8;
   items.forEach((n,i)=>{
     for(let x=M;x<W-M;x+=6)g.fillRect(x,y,3,1);y+=4;
     g.textAlign='left';
     if(n.k){g.font='bold 14px '+SERIF;wrapText(g,n.k.toUpperCase(),CW).forEach(l=>{y+=17;g.fillText(l,M,y);});y+=2;}
     g.font='bold 22px '+SERIF;wrapText(g,n.t,CW).forEach(l=>{y+=26;g.fillText(l,M,y);});
-    y+=6;g.font='italic 14px '+SERIF;y+=15;g.fillText(n.src,M,y);y+=8;
+    if(n.rows){y+=4;n.rows.forEach(r=>{g.font='16px '+SERIF;const L=wrapText(g,r[2],CW-112);y+=21;g.fillText(r[0],M,y);g.font='bold 16px '+SERIF;g.fillText(r[1],M+52,y);g.font='16px '+SERIF;L.forEach((l,i)=>{if(i)y+=19;g.fillText(l,M+112,y);});});}
+    if(n.src){y+=6;g.font='italic 14px '+SERIF;y+=15;g.fillText(n.src,M,y);}y+=8;
   });
   y+=6;for(let x=M;x<W-M;x+=10)g.fillRect(x,y,5,2);y+=18;
   return crop(cv,y);
@@ -547,6 +598,9 @@ async function gattOpen(){
 async function ensureConn(allowPicker){
   if(BT.ch&&BT.dev&&BT.dev.gatt.connected)return;
   if(BT.dev){try{await gattOpen();return;}catch(e){log('Wiederverbinden fehlgeschlagen: '+e.message);}}
+  if(!BT.dev&&navigator.bluetooth&&navigator.bluetooth.getDevices){
+    try{const ds=await navigator.bluetooth.getDevices();if(ds.length){BT.dev=ds[0];BT.dev.addEventListener('gattserverdisconnected',()=>{BT.ch=null;status('Drucker getrennt','err');});await gattOpen();return;}}catch(e){BT.dev=null;}
+  }
   if(!allowPicker)throw new Error('Drucker nicht verbunden');
   if(!btOk())throw new Error('Dieser Browser kann kein Web Bluetooth (Chrome oder Edge am Laptop, Chrome auf Android)');
   try{await pickDevice(false);}catch(e){if(e.name==='NotFoundError')throw e;await pickDevice(true);}
@@ -567,7 +621,7 @@ function toRaster(cv){
   }
   return {data:out,wb,h};
 }
-async function printCanvas(cv,onProg){
+async function printRaw(cv,onProg,feed){
   await ensureConn(false);
   const {data,wb,h}=toRaster(cv);
   const dens=Math.max(1,Math.min(8,+cfg.density||6));
@@ -581,11 +635,11 @@ async function printCanvas(cv,onProg){
     if(onProg)onProg(Math.round((y+rows)/h*100));
   }
   await sleep(300);
-  let f=Math.max(0,Math.min(1000,+cfg.feed||0));
+  let f=Math.max(0,Math.min(1000,feed!=null?feed:(+cfg.feed||0)));
   while(f>0){const n=Math.min(f,250);await bsend(new Uint8Array([0x1b,0x4a,n]));f-=n;}
   await sleep(800);
 }
-async function ping(mode){
+async function pingRaw(mode){
   await ensureConn(false);
   if(mode==='init')await bsend(new Uint8Array([0x1b,0x40]));
   else if(mode==='feed')await bsend(new Uint8Array([0x1b,0x4a,1]));
@@ -660,27 +714,507 @@ async function kaTick(){
 }
 function kaStart(){ka.on=true;ka.n=0;ka.f=0;ka.t0=Date.now();$('#kaDot').classList.add('on');$('#kaStart').disabled=true;$('#kaStop').disabled=false;wakeOn();log('Dauerlauf-Test gestartet');kaTick();}
 function kaStop(why){if(!ka.on)return;ka.on=false;clearTimeout(ka.t);$('#kaDot').classList.remove('on');log('Bilanz: '+ka.n+' Lebenszeichen angekommen, '+ka.f+' fehlgeschlagen, Laufzeit '+Math.round((Date.now()-ka.t0)/60000)+' min');$('#kaStart').disabled=false;$('#kaStop').disabled=true;if(!tk.on)wakeOff();log('Dauerlauf-Test beendet'+(why?' ('+why+')':''));}
-const tk={on:false,t:null,seen:new Set()};
-try{JSON.parse(localStorage.getItem('noetigste.seen')||'[]').forEach(x=>tk.seen.add(x));}catch(e){}
-function seenSave(){try{localStorage.setItem('noetigste.seen',JSON.stringify([...tk.seen].slice(-400)));}catch(e){}}
-async function tkTick(first){
+/* ---------- Druckwarteschlange: nie zwei Aufträge gleichzeitig ---------- */
+let pq=Promise.resolve();
+function queue(fn){const p=pq.then(fn);pq=p.catch(()=>{});return p;}
+const printCanvas=(cv,onProg,feed)=>queue(()=>printRaw(cv,onProg,feed));
+const ping=mode=>queue(()=>pingRaw(mode));
+
+/* ---------- Hilfen ---------- */
+async function getJSON(u){
+  try{
+    const ac=new AbortController(),to=setTimeout(()=>ac.abort(),10000);
+    const r=await fetch(u,{signal:ac.signal});clearTimeout(to);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.json();
+  }catch(e){
+    if(!cfg.proxy&&!PUB_PROXIES.length)throw e;
+    return JSON.parse(await fetchText(u));
+  }
+}
+const pad=n=>String(n).padStart(2,'0');
+const dm=d=>d.getDate()+'.'+(d.getMonth()+1)+'.';
+const hmin=m=>Math.floor(m/60)+':'+pad(Math.round(m%60));
+const de=(n,k)=>(+n).toFixed(k||0).replace('.',',');
+function seq(key,n){
+  const s=load(key,{order:[],pos:0});
+  if(!s.order||s.order.length!==n||s.pos>=n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}s.order=a;s.pos=0;}
+  return {i:s.order[s.pos],next:()=>{s.pos++;try{localStorage.setItem(key,JSON.stringify(s));}catch(e){}}};
+}
+function calOk(){return !!(cfg.clientId&&cfg.calsDone&&cfg.cals.some(c=>c.on));}
+
+/* Bogen: einfacher Setzkasten für Einzelblätter */
+function sheet(){
+  const H=9000,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);g.fillStyle='#000';
+  const S={g,y:12,
+    rule(h){g.fillRect(M,S.y,CW,h);S.y+=h;},
+    gap(h){S.y+=h;},
+    text(s,font,lh,al){g.font=font;g.textAlign=al||'left';const x=al==='center'?W/2:al==='right'?W-M:M;for(const l of wrapText(g,String(s),CW)){S.y+=lh;g.fillText(l,x,S.y);}g.textAlign='left';},
+    head(l){S.y+=12;g.font='bold 14px '+SERIF;const w=spaced(g,l.toUpperCase(),M,S.y+11,3,'left');g.fillRect(M+w+8,S.y+7,Math.max(0,CW-w-8),2);S.y+=24;},
+    row(lab,txt,lw){lw=lw||88;g.textAlign='left';g.font='17px '+SERIF;const L=wrapText(g,txt,CW-lw);S.y+=22;g.font='bold 17px '+SERIF;g.fillText(lab,M,S.y);g.font='17px '+SERIF;L.forEach((l,i)=>{if(i)S.y+=21;g.fillText(l,M+lw,S.y);});S.y+=4;},
+    lr(l,r,font,lh){g.font=font||'17px '+SERIF;const L=wrapText(g,l,CW-g.measureText(r).width-14);L.forEach((t,i)=>{S.y+=lh||21;g.textAlign='left';g.fillText(t,M,S.y);});g.textAlign='right';g.fillText(r,W-M,S.y);g.textAlign='left';},
+    dots(){S.y+=8;for(let x=M;x<W-M;x+=6)g.fillRect(x,S.y,3,1);S.y+=4;},
+    title(t,sub,date){
+      S.rule(2);S.y+=6;g.font='bold 36px '+SERIF;const mw=g.measureText(t).width;if(mw>CW)g.font='bold '+Math.floor(36*CW/mw)+'px '+SERIF;
+      S.y+=32;g.textAlign='center';g.fillText(t,W/2,S.y);
+      if(sub){g.font='italic 16px '+SERIF;S.y+=22;g.fillText(sub,W/2,S.y);}
+      S.y+=9;S.rule(3);S.y+=3;S.rule(1);
+      if(date!==false){g.font='bold 16px '+SERIF;g.textAlign='left';S.y+=21;g.fillText(date||new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date()),M,S.y);S.y+=8;S.rule(1);}
+      g.textAlign='left';
+    },
+    end(s){S.y+=16;g.font='italic 15px '+SERIF;g.textAlign='center';g.fillText(s||'Ende des Blatts',W/2,S.y);S.y+=12;for(let x=M;x<W-M;x+=10)g.fillRect(x,S.y,5,2);S.y+=20;return crop(cv,S.y);}
+  };
+  return S;
+}
+
+/* ---------- Kalender, Bereich ---------- */
+async function calEvents(t0,t1){
+  const on=cfg.cals.filter(c=>c.on);
+  const qs='timeMin='+encodeURIComponent(t0.toISOString())+'&timeMax='+encodeURIComponent(t1.toISOString())+'&singleEvents=true&orderBy=startTime&maxResults=100';
+  const res=await Promise.allSettled(on.map(c=>gApi('calendars/'+encodeURIComponent(c.id)+'/events?'+qs).then(j=>(j.items||[]).map(e=>({e,c})))));
+  const ev=[];
+  res.forEach((r,i)=>{
+    if(r.status!=='fulfilled'){log('Kalender '+on[i].n+': '+r.reason.message);return;}
+    r.value.forEach(({e,c})=>{
+      if(e.status==='cancelled')return;
+      const all=!!(e.start&&e.start.date);
+      const s=all?new Date(e.start.date+'T00:00:00'):new Date(e.start.dateTime);
+      const en=all?new Date(e.end.date+'T00:00:00'):new Date(e.end.dateTime);
+      ev.push({t:e.summary||'(ohne Titel)',all,s,en,bday:/geburtstag/i.test(c.n),special:/geburtstag|feiertag/i.test(c.n)});
+    });
+  });
+  return ev.sort((a,b)=>a.s-b.s||(a.all?-1:1));
+}
+const onDay=(ev,d)=>{const a=dayStart(d),b=new Date(a.getTime()+864e5);return ev.filter(x=>x.s<b&&x.en>a);};
+
+/* ---------- Wetter für mehrere Tage ---------- */
+async function getDays(n){
+  const u='https://api.open-meteo.com/v1/forecast?latitude='+cfg.lat+'&longitude='+cfg.lon+
+   '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=Europe%2FBerlin&forecast_days='+n;
+  const r=await fetch(u);if(!r.ok)throw new Error('Open-Meteo '+r.status);
+  const d=(await r.json()).daily;
+  return d.time.map((t,i)=>({date:t,dt:new Date(t+'T12:00:00'),hi:d.temperature_2m_max[i],lo:d.temperature_2m_min[i],pm:d.precipitation_probability_max[i],
+    txt:(WMO[d.weather_code[i]]||['Wetter'])[0],rise:d.sunrise[i].slice(11,16),set:d.sunset[i].slice(11,16)}));
+}
+const wxLine=w=>Math.round(w.hi)+'° / '+Math.round(w.lo)+'°  ·  Regen '+w.pm+' %  ·  '+w.txt;
+
+/* ---------- Sonne und Mond (Näherung, genau auf etwa eine Minute) ---------- */
+function sunTimes(day,lat,lon){
+  const rad=Math.PI/180,J0=Date.UTC(day.getFullYear(),day.getMonth(),day.getDate())/864e5+2440587.5;
+  const n=Math.ceil(J0-2451545+0.0008),Js=n-lon/360;
+  const Mm=(357.5291+0.98560028*Js)%360,C=1.9148*Math.sin(Mm*rad)+0.02*Math.sin(2*Mm*rad)+0.0003*Math.sin(3*Mm*rad);
+  const L=(Mm+C+180+102.9372)%360,Jt=2451545+Js+0.0053*Math.sin(Mm*rad)-0.0069*Math.sin(2*L*rad);
+  const dec=Math.asin(Math.sin(L*rad)*Math.sin(23.4397*rad));
+  const toD=J=>new Date((J-2440587.5)*864e5);
+  const at=h=>{const c=(Math.sin(h*rad)-Math.sin(lat*rad)*Math.sin(dec))/(Math.cos(lat*rad)*Math.cos(dec));if(c<-1||c>1)return null;const w=Math.acos(c)/rad/360;return [toD(Jt-w),toD(Jt+w)];};
+  const s=at(-0.833),c=at(-6);
+  return {dawn:c&&c[0],rise:s&&s[0],noon:toD(Jt),set:s&&s[1],dusk:c&&c[1]};
+}
+function moon(d){
+  const age=(((d.getTime()/864e5+2440587.5-2451550.1)/29.530588853)%1+1)%1;
+  const ill=Math.round((1-Math.cos(2*Math.PI*age))/2*100);
+  const name=age<0.03||age>0.97?'Neumond':Math.abs(age-0.5)<0.03?'Vollmond':age<0.5?'zunehmend':'abnehmend';
+  return {age,ill,name};
+}
+
+/* ---------- Ticker-Quellen ---------- */
+async function srcNews(){return (await getNews()).map(x=>({id:x.id,k:x.k,t:x.t,src:x.src}));}
+
+async function srcWx(){
+  const u='https://api.open-meteo.com/v1/forecast?latitude='+cfg.lat+'&longitude='+cfg.lon+
+    '&current=temperature_2m,weather_code,wind_speed_10m&hourly=precipitation_probability&forecast_days=1&timezone=Europe%2FBerlin';
+  const r=await fetch(u);if(!r.ok)throw new Error('Open-Meteo '+r.status);
+  const j=await r.json(),c=j.current,hr=c.time.slice(0,13);
+  const i=j.hourly.time.findIndex(t=>t.slice(0,13)===hr);
+  return [{id:hr,hh:+hr.slice(11,13),temp:c.temperature_2m,rain:i>=0?j.hourly.precipitation_probability[i]:null,wind:c.wind_speed_10m,txt:(WMO[c.weather_code]||[''])[0]}];
+}
+function renderWx(items,s,st){
+  const lo=-10,hi=35,X0=M+86,X1=W-M-46,tx=t=>X0+(Math.max(lo,Math.min(hi,t))-lo)/(hi-lo)*(X1-X0);
+  const cv=document.createElement('canvas');cv.width=W;cv.height=2000;
+  const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,2000);g.fillStyle='#000';g.strokeStyle='#000';
+  let y=0;
+  const grid=(a,b)=>{for(let t=lo;t<=hi;t+=10){const x=Math.round(tx(t));for(let yy=a;yy<b;yy+=4)g.fillRect(x,yy,1,2);}};
+  if(!st.hdr){
+    y=8;g.fillRect(M,y,CW,2);y+=6;g.font='bold 14px '+SERIF;y+=15;spaced(g,'WETTER-SEISMOGRAF  ·  '+cfg.city.toUpperCase(),M,y,2,'left');
+    y+=10;g.font='12px '+SERIF;g.textAlign='center';
+    for(let t=lo;t<=hi;t+=10)g.fillText(t+'°',tx(t),y+12);
+    g.textAlign='left';g.fillText('Uhr',M,y+12);g.textAlign='right';g.fillText('Regen',W-M,y+12);g.textAlign='left';
+    y+=18;g.fillRect(M,y,CW,1);y+=2;st.hdr=1;
+  }
+  items.forEach(w=>{
+    const h=24,y0=y,x=tx(w.temp);
+    grid(y0,y0+h);
+    g.lineWidth=2;g.beginPath();g.moveTo(st.lastX==null?x:st.lastX,y0);g.lineTo(x,y0+h/2);g.lineTo(x,y0+h);g.stroke();
+    g.beginPath();g.arc(x,y0+h/2,5,0,7);g.fill();
+    g.font='bold 15px '+SERIF;g.textAlign='left';g.fillText(pad(w.hh),M,y0+17);
+    g.font='15px '+SERIF;g.fillText(Math.round(w.temp)+'°',M+30,y0+17);
+    if(w.rain!=null){g.textAlign='right';g.font=(w.rain>=50?'bold ':'')+'14px '+SERIF;g.fillText(w.rain+' %',W-M,y0+17);g.textAlign='left';}
+    st.lastX=x;y+=h;
+  });
+  return crop(cv,y);
+}
+
+async function srcSun(){
+  const now=new Date(),t=sunTimes(now,cfg.lat,cfg.lon),out=[],day=now.toISOString().slice(0,10);
+  const ev=[['dawn','Morgendämmerung','Es wird hell.'],['rise','Sonnenaufgang',''],['noon','Mittag','Die Sonne steht am höchsten.'],['set','Sonnenuntergang',''],['dusk','Ende der Dämmerung','Es ist Nacht.']];
+  ev.forEach(([k,n,s])=>{
+    const d=t[k];if(!d||d>now||now-d>45*60000)return;
+    let src=s;
+    if(k==='rise'&&t.set)src='Tageslänge '+hmin((t.set-t.rise)/60000)+' h';
+    if(k==='set'){const m=moon(now);src='Mond: '+m.name+(m.name.endsWith('mond')?'':', '+m.ill+' % beleuchtet');}
+    out.push({id:day+k,k:'Sonnenlauf',t:n+' '+hm(d),src:src||cfg.city});
+  });
+  return out;
+}
+
+const SEV={Minor:'gering',Moderate:'mittel',Severe:'schwer',Extreme:'extrem',Unknown:''};
+async function srcWarn(){
+  const ars=(cfg.ars||'').replace(/\D/g,'').padEnd(12,'0').slice(0,5)+'0000000';
+  const j=await getJSON('https://warnung.bund.de/api31/dashboard/'+ars+'.json');
+  return (j||[]).map(x=>{
+    const d=(x.payload&&x.payload.data)||{};
+    const cancel=/cancel/i.test(d.msgType||'');
+    return {id:x.id+(cancel?'-c':''),k:(cancel?'Entwarnung · ':'Warnung · ')+(d.provider||'NINA')+(SEV[d.severity]?' · '+SEV[d.severity]:''),
+      t:(x.i18nTitle&&x.i18nTitle.de)||d.headline||'Warnung',src:'NINA · '+(x.sent?hm(new Date(x.sent)):'')};
+  });
+}
+
+async function srcPegel(){
+  const st=encodeURIComponent(cfg.pegel||'HAMBURG ST. PAULI');
+  const m=await getJSON('https://www.pegelonline.wsv.de/webservices/rest-api/v2/stations/'+st+'/W/measurements.json?start=P1D');
+  if(!m||m.length<10)throw new Error('keine Messwerte');
+  const p=m.map(x=>({t:new Date(x.timestamp),v:x.value})),last=p[p.length-1],win=100*60000,out=[];
+  let lastExt=0;
+  p.forEach((a,i)=>{
+    if(a.t.getTime()+win>last.t.getTime()||a.t.getTime()-win<p[0].t.getTime())return;
+    const nb=p.filter(b=>Math.abs(b.t-a.t)<=win);
+    const mx=Math.max(...nb.map(b=>b.v)),mn=Math.min(...nb.map(b=>b.v));
+    const kind=a.v===mx&&mx-mn>=20?'Hochwasser':a.v===mn&&mx-mn>=20?'Niedrigwasser':null;
+    if(!kind||a.t-lastExt<4*3600000)return;
+    if(nb.find(b=>b.v===a.v)!==a)return;
+    lastExt=a.t;
+    out.push({id:kind+a.t.toISOString().slice(0,16),k:'Pegel '+cfg.pegel.toLowerCase().replace(/(^|[\s.-])\S/g,s=>s.toUpperCase()),t:kind+' '+hm(a.t)+' Uhr · '+a.v+' cm',src:'jetzt '+last.v+' cm ('+hm(last.t)+')'});
+  });
+  return out;
+}
+
+async function srcDep(){
+  if(!cfg.depId)throw new Error('Keine Haltestelle gewählt (Einstellungen der Quellen)');
+  const j=await getJSON('https://v6.db.transport.rest/stops/'+encodeURIComponent(cfg.depId)+'/departures?duration=60&results=8&remarks=false');
+  const deps=(j.departures||j||[]).slice(0,8);
+  const rows=deps.map(d=>{
+    const w=new Date(d.when||d.plannedWhen),dl=d.delay?Math.round(d.delay/60):0;
+    return [hm(w),(d.line&&d.line.name||'').replace(/^(Bus|STR)\s*/,''),(d.direction||'')+(d.when?(dl>=2?'  +'+dl:''):'  · fällt aus')];
+  });
+  return [{id:'dep'+Date.now(),k:'',t:cfg.depName||'Haltestelle',rows,src:'Stand '+hm(new Date())+' · ohne Gewähr'}];
+}
+async function findStop(q){
+  const j=await getJSON('https://v6.db.transport.rest/locations?query='+encodeURIComponent(q)+'&results=1&stops=true&addresses=false&poi=false');
+  if(!j||!j[0])throw new Error('Haltestelle nicht gefunden');
+  return j[0];
+}
+
+async function srcEq(){
+  const j=await getJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson');
+  return (j.features||[]).filter(f=>f.properties.mag>=(+cfg.eqMin||5)).map(f=>{
+    const p=f.properties,c=f.geometry&&f.geometry.coordinates||[];
+    return {id:f.id,k:'Erdbeben · Stärke '+de(p.mag,1),t:p.place||'unbekannter Ort',src:'USGS · '+dm(new Date(p.time))+' '+hm(new Date(p.time))+' Uhr'+(c[2]!=null?' · Tiefe '+Math.round(c[2])+' km':'')};
+  }).reverse();
+}
+
+async function srcBt(){
+  if(!cfg.dipKey)throw new Error('Kein DIP-API-Schlüssel (Einstellungen der Quellen)');
+  const since=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+  const j=await getJSON('https://search.dip.bundestag.de/api/v1/drucksache?format=json&f.datum.start='+since+'&apikey='+encodeURIComponent(cfg.dipKey));
+  const want=(cfg.dipTypes||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  return (j.documents||[]).filter(d=>!want.length||want.some(w=>(d.drucksachetyp||'').toLowerCase().includes(w))).map(d=>({
+    id:'drs'+d.id,k:'Bundestag · '+(d.drucksachetyp||'Drucksache'),t:d.titel||'',
+    src:'Drs. '+(d.dokumentnummer||'')+((d.urheber&&d.urheber.length)?' · '+d.urheber.map(u=>u.titel).join(', '):'')
+  })).reverse();
+}
+
+const tName=t=>t&&(t.shortName||t.teamName)||'?';
+function blMatches(ms){const q=(cfg.team||'').toLowerCase().trim();return q?ms.filter(m=>(m.team1.teamName+' '+m.team2.teamName+' '+tName(m.team1)+' '+tName(m.team2)).toLowerCase().includes(q)):ms;}
+async function srcBl(){
+  const ms=blMatches(await getJSON('https://api.openligadb.de/getmatchdata/'+cfg.liga));
+  const out=[];
+  ms.forEach(m=>{
+    const a=tName(m.team1),b=tName(m.team2);
+    (m.goals||[]).slice().sort((x,y)=>x.scoreTeam1+x.scoreTeam2-y.scoreTeam1-y.scoreTeam2).forEach(gl=>{
+      out.push({id:'g'+gl.goalID,k:'Tor'+(gl.matchMinute!=null?' · '+gl.matchMinute+'. Minute':''),t:a+' '+gl.scoreTeam1+':'+gl.scoreTeam2+' '+b,
+        src:(gl.goalGetterName||'')+(gl.isPenalty?' (Elfmeter)':'')+(gl.isOwnGoal?' (Eigentor)':'')});
+    });
+    if(m.matchIsFinished){
+      const r=(m.matchResults||[]).find(x=>x.resultTypeID===2)||(m.matchResults||[]).slice(-1)[0];
+      if(r)out.push({id:'f'+m.matchID,k:'Abpfiff',t:a+' '+r.pointsTeam1+':'+r.pointsTeam2+' '+b,src:m.leagueName||''});
+    }
+  });
+  return out;
+}
+
+const SRC=[
+  {id:'news',n:'Nachrichten',d:'neue Schlagzeilen aus den Feeds',min:15,fn:srcNews},
+  {id:'wx',n:'Wetter-Seismograf',d:'jede Stunde eine Zeile; über den Tag wird daraus eine Temperaturkurve',min:10,always:1,feed:0,fn:srcWx,render:renderWx},
+  {id:'sun',n:'Sonnenlauf',d:'Dämmerung, Sonnenauf- und -untergang, Mondphase',min:5,always:1,fn:srcSun},
+  {id:'warn',n:'Warnungen',d:'NINA mit Deutschem Wetterdienst, Hochwasser und Katastrophenschutz',min:10,fn:srcWarn},
+  {id:'pegel',n:'Pegel und Gezeiten',d:'jedes Hoch- und Niedrigwasser, etwa 1½ Stunden danach bestätigt',min:20,fn:srcPegel},
+  {id:'dep',n:'Abfahrten',d:'Abfahrtstafel deiner Haltestelle in festem Abstand',min:30,always:1,fn:srcDep},
+  {id:'eq',n:'Erdbeben',d:'starke Beben weltweit (USGS)',min:15,fn:srcEq},
+  {id:'bt',n:'Bundestag',d:'neue Drucksachen aus dem DIP (API-Schlüssel nötig)',min:60,fn:srcBt},
+  {id:'bl',n:'Bundesliga',d:'Tore und Endstände live',min:3,fn:srcBl}
+];
+
+/* ---------- Ticker-Ablauf ---------- */
+const tk={on:false,t:null,st:{},seen:{}};
+function seenOf(id){
+  if(!tk.seen[id]){const s=new Set();try{JSON.parse(localStorage.getItem('noetigste.seen.'+id)||(id==='news'&&localStorage.getItem('noetigste.seen'))||'[]').forEach(x=>s.add(x));}catch(e){}tk.seen[id]=s;}
+  return tk.seen[id];
+}
+function seenSave(id){try{localStorage.setItem('noetigste.seen.'+id,JSON.stringify([...tk.seen[id]].slice(-600)));}catch(e){}}
+async function runSrc(s,st){
+  const items=await s.fn(st),seen=seenOf(s.id);
+  const fresh=items.filter(x=>!seen.has(x.id));
+  const out=(!st.ran&&!s.always&&!$('#tkFirst').checked)?[]:fresh;
+  st.ran=true;
+  if(out.length){
+    await printCanvas((s.render||renderTicker)(out,s,st),null,s.feed);
+    log(s.n+': '+out.length+' gedruckt');
+  }else if(fresh.length)log(s.n+': '+fresh.length+' vorhandene übersprungen');
+  fresh.forEach(x=>seen.add(x.id));seenSave(s.id);
+}
+async function tkLoop(){
   if(!tk.on)return;
   if(pastEnd($('#tkEnd').value)){tkStop('Endzeit erreicht');return;}
-  try{
-    const items=await getNews();
-    const fresh=items.filter(x=>!tk.seen.has(x.id));
-    items.forEach(x=>tk.seen.add(x.id));seenSave();
-    const out=(first&&!$('#tkFirst').checked)?[]:fresh;
-    if(out.length){await printCanvas(renderTicker(out));log('Ticker: '+out.length+' neue Meldungen gedruckt');}
-    else log('Ticker: nichts Neues');
-  }catch(e){log('Ticker: '+e.message);}
-  tk.t=setTimeout(()=>tkTick(false),Math.max(1,+$('#tkMin').value||15)*60000);
+  for(const s of SRC){
+    const c=cfg.tk[s.id];if(!c||!c.on)continue;
+    const st=tk.st[s.id]||(tk.st[s.id]={ran:false,next:0});
+    if(Date.now()<st.next)continue;
+    st.next=Date.now()+Math.max(1,+c.min||s.min)*60000;
+    try{await runSrc(s,st);}catch(e){log(s.n+': '+(e.message||e));}
+    if(!tk.on)return;
+  }
+  tk.t=setTimeout(tkLoop,20000);
 }
 async function tkStart(){
+  if(!SRC.some(s=>cfg.tk[s.id].on)){status('Keine Quelle angehakt','err');return;}
   try{await ensureConn(true);}catch(e){status(e.message,'err');return;}
-  tk.on=true;$('#tkDot').classList.add('on');$('#tkStart').disabled=true;$('#tkStop').disabled=false;wakeOn();log('Ticker gestartet');tkTick(true);
+  tk.on=true;tk.st={};$('#tkDot').classList.add('on');$('#tkStart').disabled=true;$('#tkStop').disabled=false;wakeOn();
+  log('Ticker gestartet: '+SRC.filter(s=>cfg.tk[s.id].on).map(s=>s.n).join(', '));tkLoop();
 }
 function tkStop(why){tk.on=false;$('#tkDot').classList.remove('on');clearTimeout(tk.t);$('#tkStart').disabled=false;$('#tkStop').disabled=true;if(!ka.on)wakeOff();log('Ticker beendet'+(why?' ('+why+')':''));}
+function drawSrcs(){
+  const b=$('#srcs');b.innerHTML='';
+  SRC.forEach(s=>{
+    const c=cfg.tk[s.id],d=document.createElement('div');d.className='src';
+    d.innerHTML='<label class="chk"><input type="checkbox"><span><b></b><br><span class="small"></span></span></label><label class="mins"><input type="number" min="1" max="240"> min</label>';
+    const [cb,mn]=d.querySelectorAll('input');
+    cb.checked=!!c.on;mn.value=c.min;d.querySelector('b').textContent=s.n;d.querySelector('.small').textContent=s.d;
+    cb.onchange=()=>{c.on=cb.checked?1:0;save();};
+    mn.onchange=()=>{c.min=Math.max(1,+mn.value||s.min);save();if(tk.st[s.id])tk.st[s.id].next=0;};
+    b.appendChild(d);
+  });
+}
+
+/* ---------- Einzelblätter ---------- */
+async function shAbend(){
+  const tm=new Date(Date.now()+864e5);
+  const [days,news,ev]=await Promise.allSettled([getDays(3),getNews(),calOk()?calEvents(dayStart(tm),new Date(dayStart(tm).getTime()+864e5)):Promise.resolve(null)]);
+  const S=sheet();S.title('ABENDAUSGABE','Das Nötigste zur Nacht');
+  if(news.status==='fulfilled'){
+    S.head('Der Tag in Schlagzeilen');
+    news.value.forEach((n,i)=>{if(i)S.dots();if(n.k)S.text(n.k.toUpperCase(),'bold 13px '+SERIF,16);S.text(n.t,'bold 19px '+SERIF,23);S.text(n.src,'italic 13px '+SERIF,16);});
+  }else log('Abendausgabe, Nachrichten: '+news.reason.message);
+  S.head('Morgen, '+new Intl.DateTimeFormat('de-DE',{weekday:'long'}).format(tm));
+  if(days.status==='fulfilled'){const w=days.value[1];S.text(wxLine(w),'17px '+SERIF,21);S.text('Sonne '+w.rise+' bis '+w.set,'italic 15px '+SERIF,19);}
+  if(ev.status==='fulfilled'&&ev.value){
+    const e=ev.value;S.gap(4);
+    const sp=e.filter(x=>x.special).map(x=>x.t);if(sp.length)S.text('Morgen: '+sp.join(', '),'italic 16px '+SERIF,20);
+    const r=e.filter(x=>!x.special);if(!r.length)S.text('Keine Termine.','italic 17px '+SERIF,21);
+    r.forEach(x=>S.row(x.all?'ganztags':hm(x.s),x.t));
+  }
+  return S.end('Gute Nacht.');
+}
+function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);return Math.ceil(((t-Date.UTC(t.getUTCFullYear(),0,1))/864e5+1)/7);}
+async function shWoche(){
+  const now=new Date(),wd=now.getDay(),off=wd===0?1:wd===6?2:0;
+  const a=dayStart(new Date(now.getTime()+off*864e5)),b=new Date(a.getTime()+7*864e5);
+  const [days,ev]=await Promise.allSettled([getDays(10),calOk()?calEvents(a,b):Promise.resolve(null)]);
+  const last=new Date(b.getTime()-864e5);
+  const S=sheet();S.title('WOCHENBLATT','Die nächsten sieben Tage','KW '+isoWeek(a)+'  ·  '+dm(a)+' bis '+dm(last)+last.getFullYear());
+  const E=ev.status==='fulfilled'&&ev.value||[];
+  const bd=E.filter(x=>x.special);
+  if(bd.length){S.head('Geburtstage und Feiertage');bd.forEach(x=>S.row(WD[x.s.getDay()]+' '+dm(x.s),x.t,96));}
+  for(let i=0;i<7;i++){
+    const d=new Date(a.getTime()+i*864e5+12*3600000);
+    S.head(new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'numeric',month:'numeric'}).format(d));
+    if(days.status==='fulfilled'){const w=days.value.find(x=>x.date===d.toLocaleDateString('sv-SE'));if(w)S.text(wxLine(w),'italic 14px '+SERIF,18);}
+    const r=onDay(E,d).filter(x=>!x.special);
+    if(calOk())r.length?r.forEach(x=>S.row(x.all?'ganztags':hm(x.s),x.t)):S.text('frei','italic 16px '+SERIF,20);
+  }
+  if(!calOk())S.text('Kalender nicht eingerichtet.','italic 14px '+SERIF,18);
+  return S.end('Gute Woche.');
+}
+const POEMS=[
+["Johann Wolfgang von Goethe","Wandrers Nachtlied","1780","Über allen Gipfeln\nIst Ruh,\nIn allen Wipfeln\nSpürest du\nKaum einen Hauch;\nDie Vögelein schweigen im Walde.\nWarte nur, balde\nRuhest du auch."],
+["Joseph von Eichendorff","Mondnacht","1837","Es war, als hätt’ der Himmel\nDie Erde still geküßt,\nDaß sie im Blütenschimmer\nVon ihm nun träumen müßt’.\n\nDie Luft ging durch die Felder,\nDie Ähren wogten sacht,\nEs rauschten leis die Wälder,\nSo sternklar war die Nacht.\n\nUnd meine Seele spannte\nWeit ihre Flügel aus,\nFlog durch die stillen Lande,\nAls flöge sie nach Haus."],
+["Rainer Maria Rilke","Herbsttag","1902","Herr: es ist Zeit. Der Sommer war sehr groß.\nLeg deinen Schatten auf die Sonnenuhren,\nund auf den Fluren laß die Winde los.\n\nBefiehl den letzten Früchten voll zu sein;\ngieb ihnen noch zwei südlichere Tage,\ndränge sie zur Vollendung hin und jage\ndie letzte Süße in den schweren Wein.\n\nWer jetzt kein Haus hat, baut sich keines mehr.\nWer jetzt allein ist, wird es lange bleiben,\nwird wachen, lesen, lange Briefe schreiben\nund wird in den Alleen hin und her\nunruhig wandern, wenn die Blätter treiben."],
+["Rainer Maria Rilke","Der Panther","1902","Sein Blick ist vom Vorübergehn der Stäbe\nso müd geworden, daß er nichts mehr hält.\nIhm ist, als ob es tausend Stäbe gäbe\nund hinter tausend Stäben keine Welt.\n\nDer weiche Gang geschmeidig starker Schritte,\nder sich im allerkleinsten Kreise dreht,\nist wie ein Tanz von Kraft um eine Mitte,\nin der betäubt ein großer Wille steht.\n\nNur manchmal schiebt der Vorhang der Pupille\nsich lautlos auf –. Dann geht ein Bild hinein,\ngeht durch der Glieder angespannte Stille –\nund hört im Herzen auf zu sein."],
+["Friedrich Hölderlin","Hälfte des Lebens","1804","Mit gelben Birnen hänget\nUnd voll mit wilden Rosen\nDas Land in den See,\nIhr holden Schwäne,\nUnd trunken von Küssen\nTunkt ihr das Haupt\nIns heilignüchterne Wasser.\n\nWeh mir, wo nehm’ ich, wenn\nEs Winter ist, die Blumen, und wo\nDen Sonnenschein,\nUnd Schatten der Erde?\nDie Mauern stehn\nSprachlos und kalt, im Winde\nKlirren die Fahnen."],
+["Eduard Mörike","Er ist’s","1829","Frühling läßt sein blaues Band\nWieder flattern durch die Lüfte;\nSüße, wohlbekannte Düfte\nStreifen ahnungsvoll das Land.\nVeilchen träumen schon,\nWollen balde kommen.\nHorch, von fern ein leiser Harfenton!\nFrühling, ja du bist’s!\nDich hab ich vernommen!"],
+["Eduard Mörike","Septembermorgen","1827","Im Nebel ruhet noch die Welt,\nNoch träumen Wald und Wiesen:\nBald siehst du, wenn der Schleier fällt,\nDen blauen Himmel unverstellt,\nHerbstkräftig die gedämpfte Welt\nIn warmem Golde fließen."],
+["Heinrich Heine","Ein Fichtenbaum steht einsam","1827","Ein Fichtenbaum steht einsam\nIm Norden auf kahler Höh’.\nIhn schläfert; mit weißer Decke\nUmhüllen ihn Eis und Schnee.\n\nEr träumt von einer Palme,\nDie, fern im Morgenland,\nEinsam und schweigend trauert\nAuf brennender Felsenwand."],
+["Georg Trakl","Ein Winterabend","1913","Wenn der Schnee ans Fenster fällt,\nLang die Abendglocke läutet,\nVielen ist der Tisch bereitet\nUnd das Haus ist wohlbestellt.\n\nMancher auf der Wanderschaft\nKommt ans Tor auf dunklen Pfaden.\nGolden blüht der Baum der Gnaden\nAus der Erde kühlem Saft.\n\nWanderer tritt still herein;\nSchmerz versteinerte die Schwelle.\nDa erglänzt in reiner Helle\nAuf dem Tische Brot und Wein."],
+["Christian Morgenstern","Das ästhetische Wiesel","1905","Ein Wiesel\nsaß auf einem Kiesel\ninmitten Bachgeriesel.\n\nWißt ihr\nweshalb?\n\nDas Mondkalb\nverriet es mir\nim Stillen:\n\nDas raffinier-\nte Tier\ntat’s um des Reimes willen."],
+["Joachim Ringelnatz","Die Ameisen","1912","In Hamburg lebten zwei Ameisen,\nDie wollten nach Australien reisen.\nBei Altona auf der Chaussee\nDa taten ihnen die Beine weh,\nUnd da verzichteten sie weise\nDann auf den letzten Teil der Reise."],
+["Theodor Storm","Die Stadt","1852","Am grauen Strand, am grauen Meer\nUnd seitab liegt die Stadt;\nDer Nebel drückt die Dächer schwer,\nUnd durch die Stille braust das Meer\nEintönig um die Stadt.\n\nEs rauscht kein Wald, es schlägt im Mai\nKein Vogel ohn Unterlaß;\nDie Wandergans mit hartem Schrei\nNur fliegt in Herbstesnacht vorbei,\nAm Strande weht das Gras.\n\nDoch hängt mein ganzes Herz an dir,\nDu graue Stadt am Meer;\nDer Jugend Zauber für und für\nRuht lächelnd doch auf dir, auf dir,\nDu graue Stadt am Meer."]
+];
+async function shGedicht(){
+  const q=seq('noetigste.p',POEMS.length),[a,t,y,txt]=POEMS[q.i];
+  const S=sheet(),g=S.g;
+  S.rule(2);S.y+=24;g.font='bold 15px '+SERIF;spaced(g,'GEDICHT DES TAGES',W/2,S.y,4,'center');S.y+=10;S.rule(1);S.gap(8);
+  S.text(t,'bold 24px '+SERIF,30,'center');S.text(a+', '+y,'italic 15px '+SERIF,20,'center');S.gap(14);
+  txt.split('\n').forEach(l=>{
+    if(!l){S.gap(12);return;}
+    g.font='18px '+SERIF;wrapText(g,l,CW-16).forEach((p,i)=>{S.y+=23;g.fillText(p,M+(i?16:0),S.y);});
+  });
+  S.gap(10);S.text('gemeinfrei','italic 13px '+SERIF,16,'right');
+  const cv=S.end('');cv.after=q.next;return cv;
+}
+async function shHeute(){
+  const n=new Date(),mm=pad(n.getMonth()+1),dd=pad(n.getDate());
+  let j;
+  try{j=await getJSON('https://api.wikimedia.org/feed/v1/wikipedia/de/onthisday/selected/'+mm+'/'+dd);}
+  catch(e){j=await getJSON('https://de.wikipedia.org/api/rest_v1/feed/onthisday/selected/'+mm+'/'+dd);}
+  let ev=(j.selected||[]).filter(x=>x.text&&x.year);
+  if(!ev.length)throw new Error('Wikipedia liefert nichts');
+  const pick=[];const step=Math.max(1,ev.length/6);for(let i=0;i<ev.length&&pick.length<6;i+=step)pick.push(ev[Math.floor(i)]);
+  pick.sort((a,b)=>a.year-b.year);
+  const S=sheet();S.title('HEUTE VOR … JAHREN','Was an einem '+n.getDate()+'. '+n.toLocaleDateString('de-DE',{month:'long'})+' geschah');
+  pick.forEach((x,i)=>{if(i)S.dots();S.text(x.year+'  ·  vor '+(n.getFullYear()-x.year)+' Jahren','bold 16px '+SERIF,22);S.text(x.text,'17px '+SERIF,21);});
+  S.gap(10);S.text('Quelle: Wikipedia, „Was geschah am …“, CC BY-SA 4.0','italic 13px '+SERIF,16);
+  return S.end();
+}
+function sudoku(){
+  const G=Array(81).fill(0),ok=(b,i,v)=>{const r=Math.floor(i/9),c=i%9,br=r-r%3,bc=c-c%3;for(let k=0;k<9;k++){if(b[r*9+k]===v||b[k*9+c]===v||b[(br+Math.floor(k/3))*9+bc+k%3]===v)return false;}return true;};
+  const sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const fill=i=>{if(i===81)return true;for(const v of sh([1,2,3,4,5,6,7,8,9])){if(ok(G,i,v)){G[i]=v;if(fill(i+1))return true;G[i]=0;}}return false;};
+  fill(0);const sol=G.slice();
+  const count=(b,lim)=>{const i=b.indexOf(0);if(i<0)return 1;let n=0;for(let v=1;v<=9&&n<lim;v++){if(ok(b,i,v)){b[i]=v;n+=count(b,lim-n);b[i]=0;}}return n;};
+  const P=sol.slice();let clues=81;
+  for(const i of sh([...Array(81).keys()])){if(clues<=28)break;const v=P[i];P[i]=0;if(count(P.slice(),2)!==1)P[i]=v;else clues--;}
+  return {P,sol};
+}
+async function shSudoku(){
+  const {P,sol}=sudoku(),q=load('noetigste.sdk',{n:0}),nr=q.n+1;
+  const S=sheet(),g=S.g;S.title('RÄTSEL','Sudoku Nr. '+nr,false);
+  const c=38,x0=(W-9*c)/2,y0=S.y+14;
+  g.textAlign='center';g.font='bold 24px '+SERIF;
+  for(let i=0;i<81;i++)if(P[i])g.fillText(P[i],x0+(i%9)*c+c/2,y0+Math.floor(i/9)*c+c/2+9);
+  for(let k=0;k<=9;k++){const w=k%3?1:3;g.fillRect(x0+k*c-(w>>1),y0,w,9*c);g.fillRect(x0,y0+k*c-(w>>1),9*c,w);}
+  S.y=y0+9*c+30;g.textAlign='left';
+  S.text('Lösung (kopfüber):','italic 13px '+SERIF,16);
+  const s=15,sc=document.createElement('canvas');sc.width=9*s+2;sc.height=9*s+2;const h=sc.getContext('2d');
+  h.fillStyle='#fff';h.fillRect(0,0,sc.width,sc.height);h.fillStyle='#000';h.font='bold 12px '+SERIF;h.textAlign='center';
+  for(let i=0;i<81;i++)h.fillText(sol[i],1+(i%9)*s+s/2,1+Math.floor(i/9)*s+s/2+4);
+  for(let k=0;k<=9;k+=3){h.fillRect(k*s,0,1,9*s+2);h.fillRect(0,k*s,9*s+2,1);}
+  g.save();g.translate(W-M,S.y+6+sc.height);g.rotate(Math.PI);g.drawImage(sc,0,0);g.restore();
+  S.y+=sc.height+10;
+  const cv=S.end('Viel Vergnügen.');cv.after=()=>{try{localStorage.setItem('noetigste.sdk',JSON.stringify({n:nr}));}catch(e){}};return cv;
+}
+async function shBon(){
+  const now=new Date(),a=dayStart(now),b=new Date(a.getTime()+864e5);
+  const [ev,days]=await Promise.allSettled([calOk()?calEvents(a,b):Promise.resolve([]),getDays(1)]);
+  const E=(ev.status==='fulfilled'?ev.value:[]).filter(x=>!x.special);
+  const S=sheet(),g=S.g;
+  S.y+=6;S.text('DAS NÖTIGSTE','bold 26px '+SERIF,28,'center');S.text('Tagesbon  ·  '+cfg.city,'italic 15px '+SERIF,20,'center');
+  S.gap(6);S.lr(now.toLocaleDateString('de-DE'),'Bon Nr. '+(Math.round((a-new Date(a.getFullYear(),0,0))/864e5)),'15px '+SERIF,19);
+  S.lr('Kasse 1  ·  '+hm(now),'Bedient: Kalender','15px '+SERIF,19);
+  S.dots();S.gap(2);
+  const iv=[];
+  E.forEach(x=>{
+    if(x.all){S.lr(x.t,'ganztags','17px '+SERIF,21);return;}
+    const s=Math.max(x.s,a),e=Math.min(x.en,b),m=Math.max(0,(e-s)/60000);
+    iv.push([+s,+e]);S.lr(hm(x.s)+'  '+x.t,hmin(m),'17px '+SERIF,21);
+  });
+  if(!E.length)S.text(calOk()?'Keine Posten. Ein freier Tag.':'Kalender nicht eingerichtet.','italic 16px '+SERIF,20);
+  iv.sort((p,q)=>p[0]-q[0]);let busy=0,cur=null;
+  iv.forEach(([s,e])=>{if(!cur||s>cur[1]){if(cur)busy+=cur[1]-cur[0];cur=[s,e];}else cur[1]=Math.max(cur[1],e);});if(cur)busy+=cur[1]-cur[0];
+  busy/=60000;const sleepM=480,free=Math.max(0,1440-sleepM-busy);
+  S.dots();
+  S.lr('Summe verplant',hmin(busy)+' h','bold 17px '+SERIF,22);
+  S.lr('Schlaf (Pauschale)',hmin(sleepM)+' h','17px '+SERIF,21);
+  S.lr('Gegeben','24:00 h','17px '+SERIF,21);
+  S.gap(4);S.rule(2);S.gap(2);S.rule(1);
+  S.lr('Rückgeld: freie Zeit',hmin(free)+' h','bold 20px '+SERIF,26);
+  if(days.status==='fulfilled'){const w=days.value[0];S.gap(6);S.text('inkl. Wetter: '+Math.round(w.hi)+'°, Regen '+w.pm+' %','italic 14px '+SERIF,18,'center');}
+  S.gap(14);let seed=+a/864e5;const x0=M+40;
+  for(let x=x0;x<W-M-40;){seed=(seed*9301+49297)%233280;const w=1+Math.floor(seed/233280*3);g.fillRect(x,S.y,w,44);x+=w+1+Math.floor(((seed*7)%233280)/233280*3);}
+  S.y+=44;S.gap(4);S.text(String(+a).slice(0,13),'12px '+SERIF,14,'center');
+  S.gap(6);S.text('Vielen Dank für Ihren Tag.','italic 16px '+SERIF,20,'center');S.text('Umtausch ausgeschlossen.','italic 14px '+SERIF,18,'center');
+  return S.end('');
+}
+async function shLiga(){
+  const now=new Date(),season=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;
+  const [ms,tb]=await Promise.allSettled([getJSON('https://api.openligadb.de/getmatchdata/'+cfg.liga),getJSON('https://api.openligadb.de/getbltable/'+cfg.liga+'/'+season)]);
+  if(ms.status!=='fulfilled'&&tb.status!=='fulfilled')throw new Error('OpenLigaDB nicht erreichbar');
+  const M0=ms.status==='fulfilled'?ms.value:[];
+  const S=sheet();S.title(({bl1:'BUNDESLIGA',bl2:'2. BUNDESLIGA',bl3:'3. LIGA'})[cfg.liga]||'LIGA',M0[0]&&M0[0].group?M0[0].group.groupName:'');
+  if(M0.length){
+    S.head('Spieltag');
+    M0.forEach(m=>{
+      const r=(m.matchResults||[]).find(x=>x.resultTypeID===2);
+      const gl=(m.goals||[]).slice(-1)[0];
+      const sc=r?r.pointsTeam1+':'+r.pointsTeam2:gl?gl.scoreTeam1+':'+gl.scoreTeam2+'*':new Date(m.matchDateTime).toLocaleString('de-DE',{weekday:'short',hour:'2-digit',minute:'2-digit'});
+      S.lr(tName(m.team1)+' – '+tName(m.team2),sc,'16px '+SERIF,20);
+    });
+    if(M0.some(m=>!m.matchIsFinished&&(m.goals||[]).length))S.text('* läuft noch','italic 12px '+SERIF,15);
+  }
+  if(tb.status==='fulfilled'&&tb.value.length){
+    S.head('Tabelle');const g=S.g;
+    tb.value.forEach((t,i)=>{
+      S.y+=19;g.font=(i<1?'bold ':'')+'15px '+SERIF;g.textAlign='right';g.fillText((i+1)+'.',M+24,S.y);
+      g.textAlign='left';g.fillText(t.shortName||t.teamName,M+32,S.y);
+      g.textAlign='right';g.fillText(t.matches,W-M-120,S.y);g.fillText((t.goalDiff>0?'+':'')+t.goalDiff,W-M-60,S.y);g.font='bold 15px '+SERIF;g.fillText(t.points,W-M,S.y);
+      if(i===3||i===5||i===15){S.y+=4;for(let x=M;x<W-M;x+=4)g.fillRect(x,S.y,2,1);}
+    });
+    g.textAlign='left';S.text('Spiele · Tore · Punkte','italic 12px '+SERIF,15,'right');
+  }
+  S.gap(6);S.text('Daten: OpenLigaDB','italic 12px '+SERIF,15);
+  return S.end();
+}
+async function shDep(){
+  const [it]=await srcDep();
+  return renderTicker([it],{n:'Abfahrten'});
+}
+function shNote(){
+  const t=($('#note').value||'').trim();if(!t)throw new Error('Notiz ist leer');
+  const S=sheet(),g=S.g;S.rule(2);S.y+=20;g.font='bold 14px '+SERIF;spaced(g,'NOTIZ  ·  '+dm(new Date())+'  '+hm(new Date()),M,S.y,3,'left');S.y+=8;S.rule(1);S.gap(4);
+  t.split('\n').forEach(l=>{if(!l.trim()){S.gap(12);return;}S.text(l,'22px '+SERIF,27);});
+  return S.end('');
+}
+const SHEETS={abend:shAbend,woche:shWoche,gedicht:shGedicht,heute:shHeute,sudoku:shSudoku,bon:shBon,liga:shLiga,dep:shDep,note:shNote};
+let shCv=null;
+async function makeSheet(k){
+  try{
+    status('Setze Blatt …');shCv=await SHEETS[k]();
+    const c=$('#cv2');c.width=shCv.width;c.height=shCv.height;c.getContext('2d').drawImage(shCv,0,0);
+    $('#bShPrint').disabled=false;$('#bShPng').disabled=false;status('Blatt bereit');
+  }catch(e){status(e.message||String(e),'err');log('Blatt: '+(e.message||e));}
+}
+async function printSheet(){
+  if(!shCv)return;
+  try{await ensureConn(true);status('Drucke …');const cv=shCv;await printCanvas(cv,p=>status('Drucke … '+p+' %'));if(cv.after){cv.after();cv.after=null;}status('Blatt gedruckt','ok');log('Blatt gedruckt ('+cv.height+' Zeilen)');}
+  catch(e){status(e.message||String(e),'err');log('Fehler: '+(e.message||e));}
+}
+function sharePng(cv,name){
+  if(!cv)return;
+  cv.toBlob(async b=>{
+    const f=new File([b],name,{type:'image/png'});
+    try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}}catch(e){if(e.name==='AbortError')return;}
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
+  },'image/png');
+}
 
 /* ---------- Oberfläche ---------- */
 function fill(){
@@ -689,7 +1223,9 @@ function fill(){
   $('#feeds').value=cfg.feeds.map(f=>f.n+' | '+f.u).join('\n');
   $('#proxy').value=cfg.proxy;$('#clientId').value=cfg.clientId;
   $('#sWetter').checked=!!cfg.sec.wetter;$('#sKal').checked=!!cfg.sec.kal;$('#sNews').checked=!!cfg.sec.news;$('#sGest').checked=!!cfg.sec.gest;
-  drawCals();
+  drawCals();drawSrcs();
+  $('#ars').value=cfg.ars;$('#pegel').value=cfg.pegel;$('#eqMin').value=cfg.eqMin;$('#dipKey').value=cfg.dipKey;$('#dipTypes').value=cfg.dipTypes;$('#liga').value=cfg.liga;$('#team').value=cfg.team;
+  $('#depQ').value=cfg.depName;$('#depFound').textContent=cfg.depId?'Gewählt: '+cfg.depName:'';
 }
 function bind(){
   const num=(id,k)=>$(id).addEventListener('change',e=>{cfg[k]=+e.target.value;save();});
@@ -709,16 +1245,14 @@ function bind(){
   $('#bPrint').onclick=doPrint;
   $('#bPrev').onclick=()=>preview().catch(e=>status(e.message,'err'));
   $('#bTest').onclick=testPrint;
-  $('#bPng').onclick=()=>{
-    if(!curCv)return;
-    curCv.toBlob(async b=>{
-      const f=new File([b],'das-noetigste.png',{type:'image/png'});
-      try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}}catch(e){if(e.name==='AbortError')return;}
-      const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='das-noetigste.png';a.click();
-    },'image/png');
-  };
+  $('#bPng').onclick=()=>sharePng(curCv,'das-noetigste.png');
   $('#kaStart').onclick=()=>kaStart();$('#kaStop').onclick=()=>kaStop('gestoppt');
   $('#tkStart').onclick=()=>tkStart();$('#tkStop').onclick=()=>tkStop('gestoppt');
+  txt('#ars','ars');txt('#pegel','pegel');num('#eqMin','eqMin');txt('#dipKey','dipKey');txt('#dipTypes','dipTypes');txt('#team','team');
+  $('#liga').addEventListener('change',e=>{cfg.liga=e.target.value;save();});
+  $('#bDep').onclick=async()=>{try{const st=await findStop($('#depQ').value.trim());cfg.depId=st.id;cfg.depName=st.name;save();$('#depFound').textContent='Gewählt: '+st.name;}catch(e){$('#depFound').textContent=e.message;log('Haltestelle: '+e.message);}};
+  document.querySelectorAll('[data-sheet]').forEach(b=>b.onclick=()=>makeSheet(b.dataset.sheet));
+  $('#bShPrint').onclick=printSheet;$('#bShPng').onclick=()=>sharePng(shCv,'das-noetigste-blatt.png');
 }
 function tab(id){
   document.querySelectorAll('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===id?'true':'false'));
@@ -729,6 +1263,7 @@ document.querySelectorAll('.tabs [role=tab]').forEach(b=>b.onclick=()=>tab(b.dat
 let tab0='brief';try{tab0=localStorage.getItem('noetigste.tab')||'brief';}catch(e){}
 tab(document.getElementById('t-'+tab0)?tab0:'brief');
 fill();bind();
+{const u=new URLSearchParams(location.search),t=u.get('notiz')||u.get('text');if(t){$('#note').value=t;tab('blatt');makeSheet('note');}}
 if(!btOk())status('Kein Web Bluetooth in diesem Browser. Vorschau und Bild gehen trotzdem.','err');
 preview().catch(e=>{status(e.message,'err');log('Fehler: '+e.message);});
 </script>

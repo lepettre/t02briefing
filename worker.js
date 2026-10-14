@@ -1,7 +1,9 @@
 // Cloudflare Worker: reicht RSS-Feeds mit CORS-Header durch, damit die Seite sie abrufen kann.
 // Nur freigegebene Hosts, nur GET. Im Cloudflare-Dashboard: Workers > Create > Code einfügen > Deploy.
 // Aufruf: https://<dein-worker>.workers.dev/?url=https%3A%2F%2Fwww.spiegel.de%2Fschlagzeilen%2Findex.rss
-const ALLOW = ['tagesschau.de', 'spiegel.de', 'zeit.de', 'sueddeutsche.de', 'deutschlandfunk.de', 'yle.fi', 'thelocal.se', 'thelocal.dk', 'thelocal.com'];
+const ALLOW = ['tagesschau.de', 'spiegel.de', 'zeit.de', 'sueddeutsche.de', 'deutschlandfunk.de', 'yle.fi', 'thelocal.se', 'thelocal.dk', 'thelocal.com',
+  // Ticker-Quellen und Einzelblätter, falls sie direkt an CORS scheitern
+  'warnung.bund.de', 'pegelonline.wsv.de', 'transport.rest', 'earthquake.usgs.gov', 'openligadb.de', 'bundestag.de', 'wikimedia.org', 'wikipedia.org'];
 
 export default {
   async fetch(request) {
