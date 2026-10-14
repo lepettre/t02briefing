@@ -18,7 +18,7 @@ Von links nach rechts beziehungsweise von oben nach unten:
 
    | Vorlage | Inhalt |
    |---|---|
-   | Morgenzeitung | Zeitungskopf, Unwetterwarnungen, Wetter heute, Termine heute, Schlagzeilen, Zitat |
+   | Morgenzeitung | Zeitungskopf, Unwetterwarnungen, Wetter heute, Termine heute, Schlagzeilen, Zitat, Horoskop |
    | Abendausgabe | Schlagzeilen des Tages, Wetter und Termine morgen, Sonne und Mond, Gedicht |
    | Wochenblatt | die nächsten sieben Tage mit Wetter und Terminen |
    | Unterwegs | Warnungen, Abfahrten an der eigenen Haltestelle, Wetter |
@@ -31,7 +31,7 @@ Von links nach rechts beziehungsweise von oben nach unten:
 2. **Inhalt anpassen.** Jede Vorlage ist eine Liste von Rubriken. Rubriken lassen sich verschieben, entfernen und aus allen verfügbaren ergänzen; manche haben Optionen (Titel, Anzahl der Meldungen, Ausblick, Tabelle). Änderungen bleiben je Vorlage gespeichert, „Vorlage zurücksetzen“ stellt den Vorschlag wieder her. Braucht eine Rubrik noch eine Einstellung (Kalender, Haltestelle, Pegel), steht das dabei, mit Sprung an die richtige Stelle.
 3. **Vorschau und Druck.** Die Vorschau aktualisiert sich bei jeder Änderung. Erst hier wird gedruckt oder als Bild gesichert.
 
-Verfügbare Rubriken: Zeitungskopf, Unwetterwarnungen, Wetter heute, Wetter morgen, Sieben Tage, Termine heute, Termine morgen, Schlagzeilen, Abfahrten, Wasserstand, Sonne und Mond, Fußball, Erdbeben, Bundestag, Heute vor … Jahren, Zitat, Gedicht, Sudoku, Tagesbon, Notiz.
+Verfügbare Rubriken: Zeitungskopf, Unwetterwarnungen, Wetter heute, Wetter morgen, Sieben Tage, Termine heute, Termine morgen, Schlagzeilen, Abfahrten, Wasserstand, Sonne und Mond, Fußball, Erdbeben, Bundestag, Heute vor … Jahren, Zitat, Horoskop, Gedicht, Sudoku, Tagesbon, Notiz.
 
 Die Adresse `https://lepettre.github.io/t02briefing/?notiz=Text` öffnet direkt die Vorlage Notiz mit diesem Text, zum Beispiel aus einem Kurzbefehl auf dem Handy.
 
@@ -120,7 +120,7 @@ Die 32 Zitate stammen aus Werken von Theodor W. Adorno, Max Horkheimer, Walter B
 - **Heute vor … Jahren:** Texte aus der deutschsprachigen Wikipedia (Seite „Was geschah am …“ über die Wikimedia-Schnittstelle), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.de). Die Namensnennung steht auf jedem Blatt.
 - **Gedichte:** alle gemeinfrei, die Verfasser sind mehr als 70 Jahre tot (zuletzt Ringelnatz, † 1934). Die Texte sind in alter Rechtschreibung nach verbreiteten Ausgaben gesetzt.
 - **Sonne und Mond:** eigene Berechnung nach der bekannten Sonnenstandsformel (Näherung auf etwa eine Minute) und dem mittleren synodischen Monat.
-- **Sudoku und Kassenbon:** eigene Arbeit.
+- **Sudoku, Tagesbon und Horoskop:** eigene Arbeit. Die Horoskoptexte sind eigene Pastiches, keine Zitate; sie spielen auf Adornos Studie „The Stars Down to Earth“ (1953) über eine Horoskopspalte an.
 
 ### Google Kalender
 

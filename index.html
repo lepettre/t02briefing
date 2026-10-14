@@ -654,6 +654,20 @@ function sheet(){
 
 /* ================= Rubriken ================= */
 function edNr(){const n=new Date();return Math.round((dayStart(n)-new Date(n.getFullYear(),0,0))/864e5);}
+const ZODIAC=[['Widder','21.3.–20.4.'],['Stier','21.4.–20.5.'],['Zwillinge','21.5.–21.6.'],['Krebs','22.6.–22.7.'],['Löwe','23.7.–23.8.'],['Jungfrau','24.8.–23.9.'],['Waage','24.9.–23.10.'],['Skorpion','24.10.–22.11.'],['Schütze','23.11.–21.12.'],['Steinbock','22.12.–20.1.'],['Wassermann','21.1.–19.2.'],['Fische','20.2.–20.3.']];
+const HORO={
+ lage:['Saturn steht im Haus der Verwaltung.','Der Mond tritt in das Zeichen der Kulturindustrie.','Venus im Quadrat zum Tauschwert.','Merkur läuft rückwärts, wie der Fortschritt.','Mars im Haus der Freizeit, die keine ist.','Jupiter verweilt im Zeichen der Anpassung.','Die Sonne durchquert das Haus der Pseudo-Individualität.','Pluto bleibt, wo er war. So auch alles andere.','Neptun im Trigon zum Immergleichen.','Uranus verspricht Wandel und meint Konjunktur.'],
+ rat:['Folgen Sie heute Ihrer Intuition. Sie wurde Ihnen gestern geliefert.','Ein Vorgesetzter wird Ihre Leistung bemerken. Das ist kein Grund zur Freude.','Gönnen Sie sich etwas. Es wird bereits angeboten.','Ein Gespräch klärt vieles, nur nicht das Ganze.','Sie fühlen sich heute einzigartig. Das gilt für alle in Ihrem Zeichen.','Vermeiden Sie Grübeleien. Denken wird ohnehin nicht nachgefragt.','Erledigen Sie Liegengebliebenes. Es bleibt Ihnen nichts anderes übrig.','Ein Fremder lächelt Ihnen zu. Er hat es so gelernt.','Hören Sie auf Ihren Körper. Er sagt, was die Werbung sagt.','Seien Sie offen für Neues. Es ist das Alte in neuer Verpackung.','Ihre Geduld wird belohnt, mit weiterer Geduld.','Zeigen Sie Initiative, solange sie im Rahmen bleibt.','Nehmen Sie sich Zeit für sich. Sie ist bereits verplant.','Bleiben Sie positiv. Das Negative bleibt es auch.'],
+ liebe:['Wer liebt, tauscht. Achten Sie auf den Kurs.','Eine Begegnung im Supermarkt: Sie greifen beide zum selben Markenprodukt.','Ihr Partner versteht Sie. Das sollte Ihnen zu denken geben.','Glück ist heute im Angebot, solange der Vorrat reicht.','Sagen Sie, was Sie fühlen, und fühlen Sie, was man sagt.','Zärtlichkeit ist möglich, wo niemand zusieht.','Ein Flirt bahnt sich an, nach bewährtem Muster.'],
+ beruf:['Ein unerwarteter Betrag geht ein und sogleich wieder aus.','Teamgeist ist gefragt. Sie werden ihn aufbringen.','Sparen lohnt sich, sagt die Bank.','Ihre Kreativität wird verwertet.','Ein Meeting entscheidet, was längst entschieden ist.','Konsumverzicht ehrt Sie. Er ändert nichts.','Eine Fortbildung macht Sie noch verwendbarer.'],
+ farbe:['Grau','Grau in Grau','Warenweiß','Betongrau','Verwaltungsbeige','Bürograu','Neonfarben, wie alle']
+};
+function horo(i,day){
+  let h=2166136261;for(const c of day+'|'+i){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}
+  const r=k=>{h^=h>>>13;h=Math.imul(h,1597334677);h^=h>>>16;return (h>>>0)%k;};
+  const pk=a=>a[r(a.length)];
+  return {lage:pk(HORO.lage),rat:pk(HORO.rat),liebe:pk(HORO.liebe),beruf:pk(HORO.beruf),farbe:pk(HORO.farbe),zahl:1+r(153)};
+}
 const RUB={
  kopf:{n:'Zeitungskopf',d:'Titel, Datum und Ort',opts:[{k:'title',l:'Titel',t:'text'},{k:'sub',l:'Untertitel',t:'text'}],
   draw(S,D,o){
@@ -815,6 +829,26 @@ const RUB={
     g.font='italic 14px '+SERIF;sl.forEach(l=>{yy+=18;g.fillText(l,W/2,yy);});g.textAlign='left';
     S.y=y+bh+4;
   }},
+ horoskop:{n:'Horoskop',d:'Frei nach Adorno',
+  opts:[{k:'z',l:'Sternzeichen',t:'sel',v:-1,o:[[-1,'alle zwölf']].concat(ZODIAC.map((z,i)=>[i,z[0]]))}],
+  draw(S,D,o){
+    const day=new Date().toDateString(),z=+o.z;
+    S.head('Horoskop');
+    if(z>=0){
+      const x=horo(z,day);
+      S.lr(ZODIAC[z][0],ZODIAC[z][1],'bold 20px '+SERIF,24);
+      S.text(x.lage,'italic 16px '+SERIF,20);S.gap(4);
+      S.text(x.rat,'17px '+SERIF,21);S.gap(4);
+      S.text('Liebe: '+x.liebe,'17px '+SERIF,21);
+      S.text('Beruf und Geld: '+x.beruf,'17px '+SERIF,21);S.gap(4);
+      S.text('Glücksfarbe: '+x.farbe+'  ·  Glückszahl: '+x.zahl,'italic 15px '+SERIF,19);
+    }else{
+      S.text(horo(-1,day).lage,'italic 16px '+SERIF,20);
+      const ord=HORO.rat.map((t,i)=>[horo(i+100,day).zahl,t]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
+      ZODIAC.forEach((zz,i)=>{S.dots();S.text(zz[0].toUpperCase(),'bold 13px '+SERIF,16);S.text(ord[i],'16px '+SERIF,20);});
+    }
+    S.gap(4);S.text('frei nach Th. W. Adorno, „The Stars Down to Earth“','italic 12px '+SERIF,16);
+  }},
  gedicht:{n:'Gedicht',d:'Eines von zwölf gemeinfreien Gedichten; jedes einmal, dann von vorn',
   draw(S,D,o,ctx){
     const g=S.g,q=seq('noetigste.p',POEMS.length),[a,t,yr,txt]=POEMS[q.i];ctx.after.push(q.next);
@@ -880,11 +914,12 @@ function sudoku(){
   return {P,sol};
 }
 
-const ORDER=['kopf','warn','wetter','morgen','woche','termine','termMorgen','news','dep','pegel','sonne','liga','eq','bt','heute','zitat','gedicht','sudoku','bon','notiz'];
+
+const ORDER=['kopf','warn','wetter','morgen','woche','termine','termMorgen','news','dep','pegel','sonne','liga','eq','bt','heute','zitat','horoskop','gedicht','sudoku','bon','notiz'];
 
 /* ================= Vorlagen ================= */
 const VORL=[
- {id:'morgen',n:'Morgenzeitung',d:'Wetter, Termine, Schlagzeilen, ein Zitat',r:['kopf','warn','wetter','termine','news','zitat'],o:{kopf:{title:'Das Nötigste',sub:'Tageszeitung im Schmalformat'}}},
+ {id:'morgen',n:'Morgenzeitung',d:'Wetter, Termine, Schlagzeilen, Zitat, Horoskop',r:['kopf','warn','wetter','termine','news','zitat','horoskop'],o:{kopf:{title:'Das Nötigste',sub:'Tageszeitung im Schmalformat'}}},
  {id:'abend',n:'Abendausgabe',d:'Der Tag in Schlagzeilen, morgen, ein Gedicht',r:['kopf','news','morgen','termMorgen','sonne','gedicht'],o:{kopf:{title:'Abendausgabe',sub:'Das Nötigste zur Nacht'},news:{title:'Der Tag in Schlagzeilen'}}},
  {id:'woche',n:'Wochenblatt',d:'Sieben Tage mit Wetter und Terminen',r:['kopf','woche'],o:{kopf:{title:'Wochenblatt',sub:'Die nächsten sieben Tage'}}},
  {id:'unterwegs',n:'Unterwegs',d:'Abfahrten, Wetter und Warnungen für den Weg',r:['kopf','warn','dep','wetter'],o:{kopf:{title:'Unterwegs',sub:''},wetter:{out:0}}},
